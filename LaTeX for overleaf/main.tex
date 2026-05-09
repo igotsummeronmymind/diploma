@@ -1,0 +1,1200 @@
+%% ============================================================
+%%  Дипломная (бакалаврская) работа
+%%  «Детекция цвета, номеров, марки машины
+%%   по материалам видеокамеры»
+%%  МФТИ, 2025
+%%  Компилируется: pdfLaTeX
+%% ============================================================
+\documentclass[14pt,a4paper]{report}
+
+%% ── Кодировка и язык ──────────────────────────────────────
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian,english]{babel}
+
+%% ── Поля страницы ─────────────────────────────────────────
+\usepackage[left=30mm,right=15mm,top=20mm,bottom=20mm]{geometry}
+
+%% ── Математика ────────────────────────────────────────────
+\usepackage{amsmath,amssymb,mathtools}
+
+%% ── Графика и таблицы ─────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage[table]{xcolor}
+
+%% ── TikZ для схем ─────────────────────────────────────────
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning,
+                fit, backgrounds, calc, chains}
+
+%% ── Оформление ────────────────────────────────────────────
+\usepackage{indentfirst}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{fancybox}
+\usepackage{tcolorbox}
+
+%% ── Гиперссылки ───────────────────────────────────────────
+\usepackage[hidelinks,unicode]{hyperref}
+
+%% ── Стиль заголовков глав ─────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\chapter}[block]
+  {\normalfont\Large\bfseries}{\thechapter}{1em}{}
+\titlespacing*{\chapter}{0pt}{-10pt}{20pt}
+
+%% ── Межстрочный интервал 1.5 ──────────────────────────────
+\onehalfspacing
+
+%% ── Нумерация по главам ───────────────────────────────────
+\numberwithin{equation}{chapter}
+\numberwithin{figure}{chapter}
+\numberwithin{table}{chapter}
+
+%% ── Цвета для схем ────────────────────────────────────────
+\definecolor{bluenode}{RGB}{52,101,164}
+\definecolor{greennode}{RGB}{30,130,76}
+\definecolor{orangenode}{RGB}{200,100,20}
+\definecolor{graynode}{RGB}{100,100,110}
+\definecolor{lightblue}{RGB}{210,228,255}
+\definecolor{lightgreen}{RGB}{210,240,215}
+\definecolor{lightorange}{RGB}{255,230,200}
+\definecolor{lightgray}{RGB}{235,235,240}
+\definecolor{rowgray}{RGB}{245,245,248}
+
+%% ── TikZ стили ────────────────────────────────────────────
+\tikzset{
+  block/.style={
+    rectangle, rounded corners=4pt, minimum width=3cm,
+    minimum height=1cm, text centered, text width=3.2cm,
+    draw, font=\small
+  },
+  blk/.style={block, fill=lightblue,  draw=bluenode,   thick},
+  grn/.style={block, fill=lightgreen, draw=greennode,  thick},
+  org/.style={block, fill=lightorange,draw=orangenode, thick},
+  gry/.style={block, fill=lightgray,  draw=graynode,   thick},
+  arr/.style={-{Stealth[length=6pt]}, thick},
+  darr/.style={arr, dashed},
+  lbl/.style={font=\footnotesize, midway, right=2pt}
+}
+
+% ─────────────────────────────────────────────────────────────
+\begin{document}
+
+%% =====================  ТИТУЛЬНЫЙ ЛИСТ  =====================
+\begin{titlepage}
+\begin{center}
+{\small
+Федеральное государственное автономное образовательное\\
+учреждение высшего образования\\[4pt]
+«Московский физико-технический институт\\
+(национальный исследовательский университет)»
+}
+
+\vspace{5cm}
+
+{\large\bfseries
+«Детекция цвета, номеров, марки машины\\
+по материалам видеокамеры»
+}\\[1.2em]
+{\normalsize (бакалаврская работа)}
+\end{center}
+
+\vspace{4cm}
+
+\hfill
+\begin{minipage}{0.42\textwidth}
+  \textbf{Студент:}\\
+  Клименко Виталий Евгеньевич\\[1.8em]
+  \rule{\linewidth}{0.4pt}
+\end{minipage}
+
+\vspace{2em}
+
+\hfill
+\begin{minipage}{0.42\textwidth}
+  \textbf{Научный руководитель:}\\
+  Назаров Алексей Николаевич\\[1.8em]
+  \rule{\linewidth}{0.4pt}
+\end{minipage}
+
+\vfill
+\begin{center}
+Москва\\
+2025
+\end{center}
+\end{titlepage}
+
+%% =====================  АННОТАЦИЯ  ==========================
+\chapter*{Аннотация}
+\addcontentsline{toc}{chapter}{Аннотация}
+
+Выпускная квалификационная работа посвящена исследованию и разработке программного
+комплекса для автоматического определения характеристик транспортных средств по
+видеопотоку с камер наблюдения: детекции автомобиля в кадре, локализации
+номерного знака, распознавания символов, а также классификации цвета и типа кузова.
+
+Предлагается конвейерная архитектура на основе методов глубокого обучения:
+YOLOv8n~--- для детекции ТС и номерных знаков, ResNet18~--- для классификации
+цвета (9 классов) и типа кузова (6 классов), EasyOCR~--- для оптического
+распознавания символов кириллицы.
+
+Обучение и тестирование проводились на открытых датасетах (VCoR, CompCars,
+Roboflow License Plates). Оценка качества выполнялась по метрикам
+mAP@0.50, Accuracy top-1/3, F1 per class и CER. Проведено сравнительное
+исследование ResNet18 и MobileNetV2. Результатом является работоспособный
+прототип системы видеоаналитики транспорта.
+
+%% =====================  СОДЕРЖАНИЕ  =========================
+\tableofcontents
+
+%% =============================================================
+%%  ГЛАВА 1 — ВВЕДЕНИЕ
+%% =============================================================
+\chapter{Введение}
+
+\section{Актуальность задачи}
+
+В настоящее время системы видеонаблюдения широко применяются для мониторинга
+дорожного движения, обеспечения безопасности и контроля доступа на объекты.
+Объём видеоданных, поступающих с камер, постоянно растёт, что делает ручную
+обработку информации неэффективной и трудоёмкой~\cite{abramov2019}.
+
+Практический интерес представляет автоматическое определение характеристик
+автомобиля: государственного регистрационного знака, марки, модели и цвета.
+Эти данные применяются в задачах контроля проезда, поиска транспортных средств
+и учёта трафика~\cite{survey2021}. Однако качество видеозаписей с камер
+наблюдения часто ограничено низким разрешением, изменениями освещённости,
+погодными условиями и движением объектов.
+
+\section{Постановка задачи}
+
+Задача анализа транспортных средств по видеоданным представляется как
+последовательность следующих этапов:
+
+\begin{enumerate}[nosep]
+  \item детекция автомобиля в кадре;
+  \item локализация номерного знака внутри области автомобиля;
+  \item оптическое распознавание символов номера;
+  \item классификация визуальных атрибутов: цвет и тип кузова.
+\end{enumerate}
+
+Формально результат детекции объектов на изображении:
+\begin{equation}
+  D = \bigl\{(b_i,\, c_i,\, p_i)\bigr\}_{i=1}^{N},
+\end{equation}
+где $b_i = (x_i, y_i, w_i, h_i)$~--- ограничивающий прямоугольник,
+$c_i$~--- класс объекта, $p_i$~--- уверенность детекции.
+
+Качество локализации оценивается через Intersection over Union:
+\begin{equation}
+  \mathrm{IoU} = \frac{S(B_{\mathrm{pred}} \cap B_{\mathrm{gt}})}
+                      {S(B_{\mathrm{pred}} \cup B_{\mathrm{gt}})}.
+\end{equation}
+
+\section{Обзор методов детекции транспортных средств}
+
+\subsection{Сравнение подходов к детекции}
+
+Эволюция методов детекции объектов прошла несколько этапов.
+Таблица~\ref{tab:detectors} суммирует основные подходы.
+
+\begin{table}[H]
+\centering
+\caption{Сравнение методов детекции объектов}
+\label{tab:detectors}
+\rowcolors{2}{rowgray}{white}
+\begin{tabularx}{\textwidth}{lXXcc}
+\toprule
+\textbf{Метод} & \textbf{Принцип} & \textbf{Достоинства} & \textbf{mAP} & \textbf{FPS} \\
+\midrule
+HOG+SVM       & Ручные признаки, скользящее окно   & Прост в реализации, нет GPU  & низкий & 5--15 \\
+Haar-каскады  & Каскад слабых классификаторов      & Очень быстрые на CPU          & низкий & 30+ \\
+Faster R-CNN  & Двухэтапная сеть, RPN+cls          & Высокая точность              & высокий & 5--15 \\
+SSD           & Одноэтапная, anchor-based          & Баланс скорости и точности    & средний & 46+ \\
+\textbf{YOLOv8n} & \textbf{Одноэтапная, anchor-free} & \textbf{Скорость + точность} & \textbf{высокий} & \textbf{100+} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Двухэтапные детекторы (Faster R-CNN)}
+
+Detectors семейства Faster R-CNN работают в два этапа: Region Proposal Network
+генерирует кандидаты, затем классификационная голова уточняет координаты.
+Подход обеспечивает высокую точность, но требователен к вычислительным ресурсам
+и не обеспечивает скорость, достаточную для обработки видео в реальном времени.
+
+\subsection{Одноэтапные детекторы (YOLO)}
+
+YOLOv8~\cite{survey2021} решает задачу детекции за один проход по сети.
+Anchor-free архитектура, CSPDarkNet backbone и FPN neck обеспечивают
+работу на GPU со скоростью 100+ FPS при конкурентоспособной точности.
+
+\noindent\textbf{Обоснование выбора:} YOLOv8n оптимален для видеопотока
+в реальном времени и совместим с форматами ONNX/TensorRT.
+
+\section{Обзор методов автоматического распознавания номерных знаков (ANPR)}
+
+Типовая ANPR-система включает несколько последовательных этапов,
+схема которых представлена на рисунке~\ref{fig:anpr_flow}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.7cm, every node/.style={font=\small}]
+  \node[blk, text width=2.6cm] (cam)   {Видеокадр\\с камеры};
+  \node[blk, text width=2.6cm, right=0.8cm of cam] (vdet)  {Детекция\\автомобиля};
+  \node[blk, text width=2.6cm, right=0.8cm of vdet](pdet)  {Локализация\\номерного знака};
+  \node[blk, text width=2.6cm, right=0.8cm of pdet](prep)  {Предо-\\бработка};
+  \node[blk, text width=2.6cm, right=0.8cm of prep](ocr)   {OCR\\символов};
+  \node[grn, text width=2.6cm, right=0.8cm of ocr] (post)  {Пост-\\обработка};
+
+  \draw[arr] (cam)  -- (vdet);
+  \draw[arr] (vdet) -- (pdet);
+  \draw[arr] (pdet) -- (prep);
+  \draw[arr] (prep) -- (ocr);
+  \draw[arr] (ocr)  -- (post);
+
+  \node[gry, text width=2.2cm, below=0.9cm of pdet] (aug)
+        {Перспективное\\выравнивание};
+  \draw[darr] (pdet) -- (aug);
+  \draw[darr] (aug)  -- (prep);
+\end{tikzpicture}
+\caption{Типовая схема ANPR-системы}
+\label{fig:anpr_flow}
+\end{figure}
+
+\subsection{Сравнение ANPR-подходов}
+
+\begin{table}[H]
+\centering
+\caption{Сравнение подходов к ANPR}
+\label{tab:anpr}
+\rowcolors{2}{rowgray}{white}
+\begin{tabularx}{\textwidth}{lXcc}
+\toprule
+\textbf{Подход} & \textbf{Описание} & \textbf{mAP plate} & \textbf{Усл. освещения} \\
+\midrule
+Морфология + шаблоны & Пороговая обработка + шаблонный OCR & $<0.70$ & Плохо \\
+HOG + SVM + Tesseract & HOG-дескриптор для локализации + Tesseract OCR & 0.75--0.80 & Удовлетворительно \\
+YOLO + CRNN & YOLO-детекция + seq2seq OCR & 0.88--0.93 & Хорошо \\
+\textbf{YOLOv8 + EasyOCR} & \textbf{Anchor-free детекция + CTC OCR} & \textbf{>0.90} & \textbf{Хорошо} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent\textbf{Обоснование выбора:} YOLOv8n (fine-tuned) + EasyOCR обеспечивает
+готовую поддержку кириллицы без обучения собственной OCR-модели.
+
+\section{Обзор методов распознавания марки и типа кузова (VMMR)}
+
+Распознавание марки/модели автомобиля (VMMR) относится к задачам тонкой
+многоклассовой классификации~\cite{vmmr2024,siddiqui2016}. Задача:
+\begin{equation}
+  \hat{y} = \arg\max_{k}\; P(y = k \mid x),
+\end{equation}
+где $x$~--- изображение, $k$~--- класс марки или типа кузова.
+
+\begin{table}[H]
+\centering
+\caption{Сравнение архитектур классификаторов для VMMR}
+\label{tab:vmmr_compare}
+\rowcolors{2}{rowgray}{white}
+\begin{tabularx}{\textwidth}{lXccc}
+\toprule
+\textbf{Архитектура} & \textbf{Особенности} & \textbf{Params, M} & \textbf{Top-1 Acc} & \textbf{FPS} \\
+\midrule
+AlexNet        & Первая глубокая CNN для ImageNet     & 61   & 0.74--0.80 & высокий \\
+VGG16          & Глубокая однородная архитектура      & 138  & 0.85--0.89 & низкий  \\
+\textbf{ResNet18} & \textbf{Residual connections, лёгкая} & \textbf{11.7} & \textbf{0.88--0.92} & \textbf{высокий} \\
+MobileNetV2    & Depthwise sep. conv., инв. бутылочное горлышко & 3.4 & 0.86--0.91 & очень высокий \\
+EfficientNet-B0 & Составной масштаб (глубина/ширина/разрешение) & 5.3 & 0.90--0.94 & средний \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent\textbf{Обоснование выбора ResNet18:} оптимальное соотношение
+точности и скорости; 11.7M параметров позволяют дообучить модель
+на ограниченных данных без переобучения.
+
+\section{Обзор методов определения цвета автомобиля}
+
+\begin{table}[H]
+\centering
+\caption{Сравнение методов классификации цвета автомобиля}
+\label{tab:color_methods}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Метод} & \textbf{Принцип} & \textbf{Accuracy} & \textbf{Устойчивость к освещению} \\
+\midrule
+k-means (RGB)       & Кластеризация пикселей         & 0.70--0.81 & Низкая \\
+k-means (HSV)       & Кластеризация в HSV-пространстве & 0.78--0.85 & Средняя \\
+SVM + цветовые гистограммы & Гистограммы + SVM        & 0.83--0.88 & Средняя \\
+\textbf{CNN (ResNet18)} & \textbf{Сквозное обучение}  & \textbf{>0.90} & \textbf{Высокая} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Для повышения устойчивости в видеопотоке применяется агрегация предсказаний
+по нескольким кадрам~\cite{kubatin2019}:
+\begin{equation}
+  \hat{y} = \arg\max_{k}\sum_{t=1}^{T} \mathbf{1}[y_t = k].
+\end{equation}
+
+\noindent\textbf{Обоснование выбора:} CNN (ResNet18) неявно учится
+инвариантности к освещению и превосходит кластеризационные методы на 10--15\%.
+
+\section{Цель и задачи работы}
+
+\textbf{Цель}~--- разработка системы автоматического определения цвета,
+типа кузова и номерного знака автомобиля по видеопотоку.
+
+\textbf{Задачи:}
+\begin{enumerate}
+  \item Провести анализ существующих методов детекции ТС, ANPR, VMMR и определения цвета.
+  \item Выбрать и обосновать архитектуры моделей для каждой подзадачи.
+  \item Подготовить обучающие датасеты.
+  \item Обучить и оценить модели детекции номеров, классификаторы цвета и типа кузова.
+  \item Интегрировать модели в единый конвейер обработки видео.
+  \item Провести сравнительный эксперимент ResNet18 vs MobileNetV2.
+\end{enumerate}
+
+%% =============================================================
+%%  ГЛАВА 2 — МЕТОДЫ И ДАТАСЕТЫ
+%% =============================================================
+\chapter{Описание выбранных методов и датасетов}
+
+\section{Архитектура системы}
+
+Разработанная система представляет собой последовательный конвейер,
+обрабатывающий каждый кадр видеопотока. Общая схема приведена
+на рисунке~\ref{fig:pipeline}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm and 0.6cm]
+
+  %% ── левая колонка (основной поток) ──────────────────────
+  \node[blk] (frame) {Кадр\\видео};
+  \node[blk, below=of frame] (vdet)  {YOLOv8n\\Детекция ТС};
+  \node[blk, below=of vdet]  (crop)  {Кроп\\автомобиля};
+  \node[blk, below=of crop]  (pdet)  {YOLOv8n\\Детекция\\номера};
+  \node[blk, below=of pdet]  (ocr)   {EasyOCR\\Чтение\\номера};
+  \node[grn, below=of ocr]   (out)   {Результат\\+ визуализация};
+
+  \draw[arr] (frame) -- (vdet);
+  \draw[arr] (vdet)  -- node[right, font=\scriptsize]{bbox} (crop);
+  \draw[arr] (crop)  -- (pdet);
+  \draw[arr] (pdet)  -- node[right, font=\scriptsize]{кроп номера} (ocr);
+  \draw[arr] (ocr)   -- (out);
+
+  %% ── правая ветка (классификаторы) ───────────────────────
+  \node[org, right=2.5cm of crop] (color) {ResNet18\\Цвет\\(9 классов)};
+  \node[org, below=0.55cm of color] (body)  {ResNet18\\Кузов\\(6 классов)};
+
+  \draw[arr] (crop.east) -- ++(0.6,0) |- (color.west);
+  \draw[arr] (crop.east) -- ++(0.6,0) |- (body.west);
+  \draw[arr] (color.south) |- (out.east);
+  \draw[arr] (body.east)  -- ++(0.3,0) |- (out.east);
+
+  %% ── подпись классов ─────────────────────────────────────
+  \node[gry, right=2.5cm of color, text width=2.8cm, font=\scriptsize]
+        (clbl) {black, white, silver,\\red, blue, yellow,\\green, brown, orange};
+  \node[gry, right=2.5cm of body,  text width=2.8cm, font=\scriptsize]
+        (blbl) {sedan, suv,\\hatchback, van,\\truck, minibus};
+  \draw[darr] (color.east) -- (clbl.west);
+  \draw[darr] (body.east)  -- (blbl.west);
+
+\end{tikzpicture}
+\caption{Схема конвейера обработки видеокадра}
+\label{fig:pipeline}
+\end{figure}
+
+\section{Детекция транспортных средств: YOLOv8}
+
+\subsection{Внутренняя архитектура YOLOv8}
+
+YOLOv8 состоит из трёх функциональных блоков, показанных
+на рисунке~\ref{fig:yolo_arch}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm, every node/.style={font=\small}]
+
+  \node[blk, text width=2.6cm] (inp) {Входное изображение\\$640\times640$};
+
+  \node[blk, text width=3cm, right=0.9cm of inp] (bb)
+        {\textbf{Backbone}\\CSPDarkNet-v8\\(C2f блоки)};
+
+  \node[blk, text width=3cm, right=0.9cm of bb] (neck)
+        {\textbf{Neck}\\PAN-FPN\\мультимасштаб};
+
+  \node[grn, text width=3cm, right=0.9cm of neck] (head)
+        {\textbf{Head}\\Anchor-free\\Bbox + Cls};
+
+  \node[org, text width=3cm, right=0.9cm of head] (out)
+        {Детекции\\$(x,y,w,h,p,c)$};
+
+  \draw[arr] (inp)  -- (bb);
+  \draw[arr] (bb)   -- node[above,font=\scriptsize]{P3/P4/P5} (neck);
+  \draw[arr] (neck) -- (head);
+  \draw[arr] (head) -- (out);
+
+  %% подписи снизу
+  \node[below=0.5cm of bb,   font=\scriptsize, text=graynode]
+       {Feature extraction};
+  \node[below=0.5cm of neck, font=\scriptsize, text=graynode]
+       {Feature fusion};
+  \node[below=0.5cm of head, font=\scriptsize, text=graynode]
+       {Prediction};
+
+\end{tikzpicture}
+\caption{Упрощённая схема архитектуры YOLOv8}
+\label{fig:yolo_arch}
+\end{figure}
+
+Функция потерь YOLOv8:
+\begin{equation}
+  \mathcal{L} = \lambda_{\mathrm{box}}\,\mathcal{L}_{\mathrm{box}}
+              + \lambda_{\mathrm{cls}}\,\mathcal{L}_{\mathrm{cls}}
+              + \lambda_{\mathrm{dfl}}\,\mathcal{L}_{\mathrm{dfl}},
+\end{equation}
+где $\mathcal{L}_{\mathrm{box}}$~--- CIoU loss,
+$\mathcal{L}_{\mathrm{cls}}$~--- BCE,
+$\mathcal{L}_{\mathrm{dfl}}$~--- Distribution Focal Loss.
+
+\subsection{Параметры инференса}
+
+\begin{table}[H]
+\centering
+\caption{Параметры запуска YOLOv8n для детекции ТС}
+\label{tab:yolo_params}
+\begin{tabular}{ll}
+\toprule
+\textbf{Параметр} & \textbf{Значение} \\
+\midrule
+Модель                  & \texttt{yolov8n.pt} (предобученная, COCO) \\
+Порог уверенности       & $p_{\min} = 0.40$ \\
+Порог NMS IoU           & $0.45$ \\
+Используемые классы     & 2 (car), 3 (motorcycle), 5 (bus), 7 (truck) \\
+Размер входа            & $640 \times 640$ \\
+Аппаратная платформа    & GPU NVIDIA Tesla T4 / CPU \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Детекция номерных знаков: дообученный YOLOv8n}
+
+\subsection{Схема transfer learning}
+
+Процесс дообучения показан на рисунке~\ref{fig:transfer}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.6cm and 0.7cm]
+
+  \node[blk, text width=3.2cm] (pre)
+        {YOLOv8n\\предобученная\\(COCO, 80 классов)};
+
+  \node[blk, text width=3.2cm, right=1.2cm of pre] (frz)
+        {Заморозка\\Backbone\\(первые эпохи)};
+
+  \node[org, text width=3.2cm, right=1.2cm of frz] (head)
+        {Переобучение\\Head\\(1 класс: plate)};
+
+  \node[grn, text width=3.2cm, right=1.2cm of head] (res)
+        {Финальная модель\\yolov8n\_plates.pt};
+
+  \draw[arr] (pre)  -- (frz);
+  \draw[arr] (frz)  -- (head);
+  \draw[arr] (head) -- (res);
+
+  \node[below=0.7cm of frz, font=\scriptsize, text width=3.8cm, align=center]
+       {Roboflow License Plates\\$\approx$6000 изображений};
+  \draw[darr] ([yshift=-0.5cm]frz.south) -- (head.south |- {[yshift=-0.5cm]frz.south});
+
+\end{tikzpicture}
+\caption{Схема transfer learning для детектора номерных знаков}
+\label{fig:transfer}
+\end{figure}
+
+\subsection{Параметры обучения}
+
+\begin{table}[H]
+\centering
+\caption{Гиперпараметры дообучения детектора номеров}
+\label{tab:plate_hp}
+\begin{tabular}{ll}
+\toprule
+\textbf{Параметр} & \textbf{Значение} \\
+\midrule
+Базовая модель       & \texttt{yolov8n.pt} \\
+Эпохи                & 50 \\
+Размер входа         & $640 \times 640$ \\
+Размер батча         & 16 \\
+Оптимизатор          & SGD \\
+Начальная LR         & 0.01 \\
+Momentum             & 0.937 \\
+Weight decay         & $5 \times 10^{-4}$ \\
+Число классов        & 1 (\textit{license\_plate}) \\
+Метрика сохранения   & mAP@0.50 на валидации \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Оптическое распознавание номеров: EasyOCR}
+
+EasyOCR использует двухэтапный конвейер, представленный
+на рисунке~\ref{fig:ocr_pipeline}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.7cm]
+  \node[blk, text width=3cm]  (plate) {Кроп номерного\\знака (BGR)};
+  \node[blk, text width=3cm, right=0.9cm of plate]  (gray)  {Оттенки\\серого\\(Otsu)};
+  \node[blk, text width=3.2cm, right=0.9cm of gray]  (craft) {\textbf{CRAFT}\\Карты символов\\+ аффинности};
+  \node[blk, text width=3.2cm, right=0.9cm of craft] (crnn)  {\textbf{CRNN+CTC}\\Декодирование\\строки};
+  \node[grn, text width=3cm, right=0.9cm of crnn]   (regex) {Regex-фильтр\\RU формата};
+
+  \draw[arr] (plate) -- (gray);
+  \draw[arr] (gray)  -- (craft);
+  \draw[arr] (craft) -- node[above,font=\scriptsize]{регионы} (crnn);
+  \draw[arr] (crnn)  -- (regex);
+\end{tikzpicture}
+\caption{Конвейер EasyOCR для распознавания номерного знака}
+\label{fig:ocr_pipeline}
+\end{figure}
+
+Качество OCR оценивается через Character Error Rate:
+\begin{equation}
+  \mathrm{CER} = \frac{S + D + I}{N},
+\end{equation}
+где $S, D, I$~--- замены, удаления, вставки (алгоритм Левенштейна),
+$N$~--- длина эталонной строки.
+
+\section{Классификация цвета и типа кузова: ResNet18}
+
+\subsection{Архитектура ResNet18}
+
+Ключевая идея ResNet~--- shortcut-соединения:
+\begin{equation}
+  \mathbf{y} = \mathcal{F}(\mathbf{x},\{W_i\}) + \mathbf{x},
+\end{equation}
+что устраняет затухание градиентов и позволяет строить глубокие сети.
+Схема residual-блока и размещение слоёв в ResNet18 приведены
+на рисунке~\ref{fig:resnet_arch}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.45cm and 0.8cm]
+
+  %% ── Residual-блок ────────────────────────────────────────
+  \begin{scope}[local bounding box=resblk]
+    \node[blk, text width=2.4cm] (in)   {Вход $\mathbf{x}$};
+    \node[blk, text width=2.4cm, below=of in]   (c1) {Conv $3\times3$\\BN + ReLU};
+    \node[blk, text width=2.4cm, below=of c1]   (c2) {Conv $3\times3$\\BN};
+    \node[grn, text width=2.4cm, below=of c2]   (add){$+$ (shortcut)\\ReLU};
+    \node[blk, text width=2.4cm, below=of add]  (out){Выход $\mathbf{y}$};
+
+    \draw[arr] (in)  -- (c1);
+    \draw[arr] (c1)  -- (c2);
+    \draw[arr] (c2)  -- (add);
+    \draw[arr] (add) -- (out);
+
+    %% shortcut
+    \draw[arr, bluenode, rounded corners=6pt]
+        (in.east) -- ++(1.0,0) -- ++(0,-4.0) -- (add.east);
+    \node[right=1.15cm of c1, font=\scriptsize, text=bluenode]
+         {shortcut};
+  \end{scope}
+
+  %% ── Состав ResNet18 ──────────────────────────────────────
+  \begin{scope}[xshift=6.5cm, node distance=0.35cm]
+    \node[blk, text width=3.4cm] (r0)  {Conv $7\times7$, s=2\\BN + ReLU};
+    \node[blk, text width=3.4cm, below=of r0]  (mp)  {MaxPool $3\times3$, s=2};
+    \node[blk, text width=3.4cm, below=of mp]  (r1)  {Layer1: $2\times$ Res-Block\\64 каналов};
+    \node[blk, text width=3.4cm, below=of r1]  (r2)  {Layer2: $2\times$ Res-Block\\128 каналов};
+    \node[blk, text width=3.4cm, below=of r2]  (r3)  {Layer3: $2\times$ Res-Block\\256 каналов};
+    \node[blk, text width=3.4cm, below=of r3]  (r4)  {Layer4: $2\times$ Res-Block\\512 каналов};
+    \node[blk, text width=3.4cm, below=of r4]  (gap) {AvgPool + Flatten};
+    \node[grn, text width=3.4cm, below=of gap] (fc)  {FC: 512 → $K$ классов};
+
+    \foreach \a/\b in {r0/mp, mp/r1, r1/r2, r2/r3, r3/r4, r4/gap, gap/fc}
+      \draw[arr] (\a) -- (\b);
+  \end{scope}
+
+  %% подпись блока
+  \node[above=0.1cm of in, font=\small\bfseries] {Residual-блок};
+  \node[above=0.1cm of r0, font=\small\bfseries] {Состав ResNet18};
+
+\end{tikzpicture}
+\caption{Residual-блок и структура ResNet18 (18 слоёв, $K$~--- число классов)}
+\label{fig:resnet_arch}
+\end{figure}
+
+\subsection{Двухфазное дообучение}
+
+Стратегия двухфазного обучения показана на рисунке~\ref{fig:twophase}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.6cm and 1.0cm]
+  \node[blk, text width=4cm] (p1)
+        {\textbf{Фаза 1}\\Backbone заморожен\\Обучается только FC\\$\eta_1 = 10^{-3}$};
+  \node[org, text width=3cm, right=1.2cm of p1] (sw)
+        {Эпоха\\UNFREEZE\_AT\\Разморозка};
+  \node[blk, text width=4cm, right=1.2cm of sw] (p2)
+        {\textbf{Фаза 2}\\Весь backbone обучается\\$\eta_2 = \eta_1/10$};
+  \node[grn, text width=3cm, right=1.2cm of p2] (save)
+        {Best model\\(max val acc)};
+
+  \draw[arr] (p1) -- node[above,font=\scriptsize]{эп. 1–N} (sw);
+  \draw[arr] (sw) -- node[above,font=\scriptsize]{эп. N+1–end} (p2);
+  \draw[arr] (p2) -- (save);
+\end{tikzpicture}
+\caption{Стратегия двухфазного дообучения ResNet18}
+\label{fig:twophase}
+\end{figure}
+
+Функция потерь~--- кросс-энтропия:
+\begin{equation}
+  \mathcal{L}_{\mathrm{CE}} = -\sum_{k=1}^{K} y_k \log \hat{y}_k,
+\end{equation}
+где $y_k$~--- one-hot метка, $\hat{y}_k$~--- предсказанная вероятность.
+
+\subsection{Гиперпараметры обучения}
+
+\begin{table}[H]
+\centering
+\caption{Гиперпараметры обучения классификаторов ResNet18}
+\label{tab:resnet_hp}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Параметр} & \textbf{Классификатор цвета} & \textbf{Классификатор кузова} \\
+\midrule
+Число классов     & 9              & 6 \\
+Эпохи             & 20             & 25 \\
+Разморозка на эпохе & 5            & 6 \\
+Батч              & 32             & 32 \\
+LR (Фаза 1)       & $10^{-3}$      & $10^{-3}$ \\
+LR (Фаза 2)       & $10^{-4}$      & $10^{-4}$ \\
+Оптимизатор       & Adam           & Adam \\
+$\beta_1, \beta_2$ & 0.9, 0.999   & 0.9, 0.999 \\
+StepLR шаг        & 5 эпох         & 6 эпох \\
+StepLR $\gamma$   & 0.3            & 0.3 \\
+Размер входа      & $224\times224$ & $224\times224$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Аугментация данных}
+
+\begin{table}[H]
+\centering
+\caption{Аугментации для обучения классификаторов}
+\label{tab:augmentation}
+\begin{tabular}{lll}
+\toprule
+\textbf{Преобразование} & \textbf{Параметры} & \textbf{Назначение} \\
+\midrule
+\multicolumn{3}{l}{\textit{Обучающая выборка}} \\
+RandomResizedCrop   & $224$, scale $[0.65, 1.0]$    & Масштаб и позиция \\
+RandomHorizontalFlip & $p=0.5$                      & Зеркальное отражение \\
+ColorJitter         & brightness=0.3, contrast=0.3  & Освещение \\
+RandomRotation      & $\pm 10°$                     & Поворот \\
+Normalize           & $\mu=[.485,.456,.406]$         & ImageNet stats \\
+\midrule
+\multicolumn{3}{l}{\textit{Валидационная выборка}} \\
+Resize              & $224\times224$                 & Размер входа \\
+Normalize           & $\mu=[.485,.456,.406]$         & ImageNet stats \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Сравниваемая архитектура: MobileNetV2}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.9cm]
+
+  %% Inverted Residual Block
+  \begin{scope}
+    \node[blk, text width=3cm] (mi)  {Вход $h \times w \times c$};
+    \node[blk, text width=3cm, below=of mi] (exp) {Conv $1\times1$\\(расширение $\times t$)};
+    \node[blk, text width=3cm, below=of exp](dw)  {DWConv $3\times3$\\(depthwise)};
+    \node[blk, text width=3cm, below=of dw] (proj){Conv $1\times1$\\(проекция)};
+    \node[grn, text width=3cm, below=of proj](mo) {Выход $h \times w \times c'$};
+
+    \draw[arr] (mi)  -- (exp);
+    \draw[arr] (exp) -- (dw);
+    \draw[arr] (dw)  -- (proj);
+    \draw[arr] (proj)-- (mo);
+
+    \draw[arr, orangenode, rounded corners=6pt]
+        (mi.east) -- ++(0.9,0) -- ++(0,-3.7) -- (mo.east);
+    \node[right=1.05cm of dw, font=\scriptsize, text=orangenode]{skip (если $c=c'$)};
+  \end{scope}
+
+  %% Сравнение параметров
+  \begin{scope}[xshift=6.5cm]
+    \node[font=\small\bfseries] at (1.7, 0) {ResNet18 vs MobileNetV2};
+    \node[gry, text width=4.8cm, below=0.3cm of {(1.7,0)}] (tbl)
+    {
+    \begin{tabular}{lcc}
+    \small Характеристика & \small R18 & \small MV2 \\
+    \hline
+    \small Params, M       & \small 11.7 & \small 3.4 \\
+    \small Blocks          & \small Residual & \small Inv.Res. \\
+    \small Conv type       & \small Standard & \small Depthwise \\
+    \small FLOPS (224)     & \small 1.8G & \small 0.3G \\
+    \end{tabular}
+    };
+  \end{scope}
+
+  \node[above=0.1cm of mi, font=\small\bfseries] {Inverted Residual Block};
+\end{tikzpicture}
+\caption{Инвертированный residual-блок MobileNetV2 и сравнение с ResNet18}
+\label{fig:mobilenet}
+\end{figure}
+
+\section{Датасеты}
+
+\begin{table}[H]
+\centering
+\caption{Сводная информация об используемых датасетах}
+\label{tab:datasets_summary}
+\rowcolors{2}{rowgray}{white}
+\begin{tabularx}{\textwidth}{lXcccc}
+\toprule
+\textbf{Датасет} & \textbf{Задача} & \textbf{Источник} & \textbf{Изобр.} & \textbf{Классов} & \textbf{Формат} \\
+\midrule
+COCO 2017          & Детекция ТС        & COCO/Ultralytics & 118k & 80 (4 для ТС) & YOLO \\
+Roboflow LP        & Детекция номеров   & Roboflow         & $\approx$6k  & 1 & YOLO \\
+VCoR               & Цвет авто          & Kaggle           & $\approx$15k & 9 & ImageFolder \\
+CompCars body-type & Тип кузова         & CUHK             & $\approx$30k & 6 & ImageFolder \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{VCoR~--- классификация цвета}
+
+\begin{table}[H]
+\centering
+\caption{Классы датасета VCoR и соответствующие цвета}
+\label{tab:vcor}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{clll}
+\toprule
+\textbf{\#} & \textbf{Класс} & \textbf{Приблизительный RGB} & \textbf{Hex} \\
+\midrule
+1 & black  & (25, 25, 25)   & \#191919 \\
+2 & white  & (230, 230, 230)& \#E6E6E6 \\
+3 & silver & (175, 180, 185)& \#AFB4B9 \\
+4 & red    & (195, 30, 30)  & \#C31E1E \\
+5 & blue   & (30, 60, 200)  & \#1E3CC8 \\
+6 & yellow & (220, 200, 20) & \#DCC814 \\
+7 & green  & (30, 145, 30)  & \#1E911E \\
+8 & brown  & (100, 60, 30)  & \#643C1E \\
+9 & orange & (215, 105, 20) & \#D7691E \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{CompCars~--- классификация типа кузова}
+
+\begin{table}[H]
+\centering
+\caption{Маппинг оригинальных классов CompCars на целевые}
+\label{tab:compcars}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lll}
+\toprule
+\textbf{Оригинальный класс CompCars} & \textbf{Целевой класс} & \textbf{Описание} \\
+\midrule
+sedan, fastback, convertible & sedan    & Легковой, 4 двери \\
+hatchback, estate            & hatchback& Хетчбэк, универсал \\
+SUV, crossover               & suv      & Внедорожник \\
+MPV                          & van      & Минивэн \\
+pickup, truck                & truck    & Грузовой / пикап \\
+microbus, minibus            & minibus  & Микроавтобус \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% =============================================================
+%%  ГЛАВА 3 — ЭКСПЕРИМЕНТЫ
+%% =============================================================
+\chapter{Описание экспериментов}
+
+\section{Условия проведения экспериментов}
+
+\begin{table}[H]
+\centering
+\caption{Программно-аппаратная конфигурация экспериментов}
+\label{tab:env}
+\begin{tabular}{ll}
+\toprule
+\textbf{Компонент} & \textbf{Значение} \\
+\midrule
+Платформа         & Google Colab \\
+GPU               & NVIDIA Tesla T4, 16 GB VRAM \\
+CPU               & Intel Xeon (2 vCPU) \\
+RAM               & 12 GB \\
+OS                & Ubuntu 20.04 \\
+Python            & 3.10 \\
+PyTorch           & 2.x + CUDA 11.8 \\
+Ultralytics       & 8.x \\
+EasyOCR           & 1.7 \\
+torchvision       & 0.17 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Ноутбуки для воспроизведения:
+\begin{itemize}[nosep]
+  \item \texttt{01\_detection.ipynb}~--- детекция ТС, fine-tune детектора номеров, OCR;
+  \item \texttt{02\_color\_classifier.ipynb}~--- классификатор цвета (VCoR);
+  \item \texttt{03\_body\_classifier.ipynb}~--- классификатор кузова (CompCars);
+  \item \texttt{04\_pipeline\_final.ipynb}~--- финальный конвейер, статистика.
+\end{itemize}
+
+\section{Эксперимент 1: дообучение детектора номерных знаков}
+
+\subsection{Протокол}
+
+YOLOv8n дообучался на датасете Roboflow License Plates в течение 50 эпох
+(параметры~--- таблица~\ref{tab:plate_hp}). Лучшая модель сохранялась
+по максимуму mAP@0.50 на валидации.
+
+\subsection{Результаты}
+
+\begin{table}[H]
+\centering
+\caption{Метрики детектора номерных знаков (val)}
+\label{tab:plate_det}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Метрика} & \textbf{YOLOv8n (pretrained)} & \textbf{YOLOv8n (fine-tuned)} \\
+\midrule
+mAP@0.50       & --- & \textit{(заполнить)} \\
+mAP@0.50:0.95  & --- & \textit{(заполнить)} \\
+Precision      & --- & \textit{(заполнить)} \\
+Recall         & --- & \textit{(заполнить)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Кривые обучения:
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=0.85\textwidth]{figs/plate_training_curves.png}
+%   \caption{Кривые loss и mAP при дообучении детектора номеров}
+%   \label{fig:plate_curves}
+% \end{figure}
+
+\section{Эксперимент 2: классификатор цвета}
+
+\subsection{Протокол}
+
+ResNet18 (ImageNet) дообучался на VCoR, 20 эпох, разморозка на эпохе~5.
+Батч: 32. Аугментации~--- таблица~\ref{tab:augmentation}.
+
+\subsection{Результаты}
+
+\begin{table}[H]
+\centering
+\caption{Метрики классификатора цвета (val)}
+\label{tab:color_metrics}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Метрика} & \textbf{Baseline (fc only)} & \textbf{Fine-tuned (2 phase)} \\
+\midrule
+Accuracy top-1 & \textit{(заполнить)} & \textit{(заполнить)} \\
+Accuracy top-3 & \textit{(заполнить)} & \textit{(заполнить)} \\
+Macro F1       & \textit{(заполнить)} & \textit{(заполнить)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{F1-score по классам цвета (val, fine-tuned модель)}
+\label{tab:color_per_class}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Класс} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\midrule
+black   & \textit{---} & \textit{---} & \textit{---} \\
+white   & \textit{---} & \textit{---} & \textit{---} \\
+silver  & \textit{---} & \textit{---} & \textit{---} \\
+red     & \textit{---} & \textit{---} & \textit{---} \\
+blue    & \textit{---} & \textit{---} & \textit{---} \\
+yellow  & \textit{---} & \textit{---} & \textit{---} \\
+green   & \textit{---} & \textit{---} & \textit{---} \\
+brown   & \textit{---} & \textit{---} & \textit{---} \\
+orange  & \textit{---} & \textit{---} & \textit{---} \\
+\midrule
+\textbf{Macro avg} & \textit{---} & \textit{---} & \textit{---} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Confusion matrix и F1-bars:
+% \begin{figure}[H]
+%   \centering
+%   \begin{subfigure}[b]{0.48\textwidth}
+%     \includegraphics[width=\textwidth]{figs/color_confusion_matrix.png}
+%     \caption{Confusion matrix}
+%   \end{subfigure}
+%   \hfill
+%   \begin{subfigure}[b]{0.48\textwidth}
+%     \includegraphics[width=\textwidth]{figs/color_per_class_metrics.png}
+%     \caption{F1 по классам}
+%   \end{subfigure}
+%   \caption{Оценка классификатора цвета}
+%   \label{fig:color_eval}
+% \end{figure}
+
+\section{Эксперимент 3: классификатор типа кузова}
+
+\subsection{Протокол}
+
+ResNet18 дообучался на CompCars body type, 25 эпох, разморозка на эпохе~6.
+Параметры аналогичны эксперименту~2.
+
+\subsection{Результаты}
+
+\begin{table}[H]
+\centering
+\caption{Метрики классификатора типа кузова (val)}
+\label{tab:body_metrics}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Метрика} & \textbf{Baseline (fc only)} & \textbf{Fine-tuned (2 phase)} \\
+\midrule
+Accuracy top-1 & \textit{(заполнить)} & \textit{(заполнить)} \\
+Accuracy top-3 & \textit{(заполнить)} & \textit{(заполнить)} \\
+Macro F1       & \textit{(заполнить)} & \textit{(заполнить)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{F1-score по классам типа кузова (val, fine-tuned модель)}
+\label{tab:body_per_class}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Класс} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\midrule
+sedan     & \textit{---} & \textit{---} & \textit{---} \\
+suv       & \textit{---} & \textit{---} & \textit{---} \\
+hatchback & \textit{---} & \textit{---} & \textit{---} \\
+van       & \textit{---} & \textit{---} & \textit{---} \\
+truck     & \textit{---} & \textit{---} & \textit{---} \\
+minibus   & \textit{---} & \textit{---} & \textit{---} \\
+\midrule
+\textbf{Macro avg} & \textit{---} & \textit{---} & \textit{---} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Эксперимент 4: сравнение архитектур ResNet18 и MobileNetV2}
+
+\subsection{Постановка}
+
+Оба классификатора обучались на одинаковом разбиении CompCars при одинаковых
+гиперпараметрах (только голова $\mathrm{fc}$, без разморозки backbone).
+Измерялись val Accuracy и FPS инференса ($224 \times 224$, GPU~T4).
+
+\subsection{Результаты}
+
+\begin{table}[H]
+\centering
+\caption{Сравнение архитектур на задаче классификации типа кузова}
+\label{tab:arch_comparison}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Модель} & \textbf{Params, M} & \textbf{FLOPS, G} & \textbf{Val Acc} & \textbf{FPS (T4)} & \textbf{Размер .pth, MB} \\
+\midrule
+ResNet18    & 11.7 & 1.8 & \textit{(заполнить)} & \textit{(заполнить)} & $\approx 45$ \\
+MobileNetV2 &  3.4 & 0.3 & \textit{(заполнить)} & \textit{(заполнить)} & $\approx 14$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Эксперимент 5: финальный конвейер}
+
+\subsection{Тест на одиночном изображении}
+
+Для качественной проверки конвейер запускается на тестовом изображении
+(Toyota Camry 2011, Wikimedia Commons). Ожидаемый результат: детекция
+автомобиля, предсказание цвета \textit{silver}, типа кузова \textit{sedan},
+распознавание номера.
+
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=0.75\textwidth]{figs/test_single_frame.jpg}
+%   \caption{Результат обработки тестового изображения финальным конвейером}
+%   \label{fig:test_frame}
+% \end{figure}
+
+\subsection{Метрики производительности}
+
+\begin{table}[H]
+\centering
+\caption{Задержка и производительность модулей конвейера (GPU~T4)}
+\label{tab:pipeline_fps}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Модуль} & \textbf{Задержка, мс} & \textbf{Доля в общей задержке, \%} \\
+\midrule
+YOLOv8n детекция ТС       & \textit{(заполнить)} & \textit{---} \\
+YOLOv8n детекция номера   & \textit{(заполнить)} & \textit{---} \\
+ResNet18 цвет             & \textit{(заполнить)} & \textit{---} \\
+ResNet18 кузов            & \textit{(заполнить)} & \textit{---} \\
+EasyOCR                   & \textit{(заполнить)} & \textit{---} \\
+\midrule
+\textbf{Итого (pipeline)} & \textit{(заполнить)} & 100\% \\
+\textbf{FPS}              & \multicolumn{2}{c}{\textit{(заполнить)}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Итоговая таблица результатов}
+
+\begin{table}[H]
+\centering
+\caption{Сводная таблица метрик по всем модулям}
+\label{tab:final_summary}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{llcl}
+\toprule
+\textbf{Модуль} & \textbf{Компонент} & \textbf{Целевая метрика} & \textbf{Результат} \\
+\midrule
+Детекция ТС         & YOLOv8n (COCO)           & mAP@0.50        & $>0.80$ (pretrained) \\
+Детекция номеров    & YOLOv8n (fine-tuned)     & mAP@0.50        & \textit{(заполнить)} \\
+Классификация цвета & ResNet18 (VCoR)          & Accuracy top-1  & \textit{(заполнить)} \\
+Классификация кузова& ResNet18 (CompCars)      & Accuracy top-1  & \textit{(заполнить)} \\
+OCR номеров         & EasyOCR ru+en            & CER             & \textit{(заполнить)} \\
+\textbf{Pipeline}   & \textbf{Полный конвейер} & \textbf{FPS}    & \textit{(заполнить)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% =============================================================
+%%  ГЛАВА 4 — ВЫВОДЫ
+%% =============================================================
+\chapter{Выводы}
+
+В рамках выпускной квалификационной работы разработана система автоматического
+определения характеристик транспортных средств. Сформулированы следующие выводы.
+
+\begin{enumerate}
+  \item \textbf{Архитектурный выбор.}
+        Комбинация YOLOv8n~+ ResNet18~+ EasyOCR обеспечивает приемлемый баланс
+        точности и скорости (см. таблицу~\ref{tab:final_summary}).
+
+  \item \textbf{Детектор номерных знаков.}
+        Fine-tuning YOLOv8n на датасете Roboflow LP позволяет достичь
+        mAP@0.50\,$>$\,\textit{(XX)}, что подтверждает эффективность
+        transfer learning при малом объёме целевых данных.
+
+  \item \textbf{Классификация цвета.}
+        ResNet18, дообученный на VCoR за 20 эпох с двухфазной стратегией,
+        достигает Accuracy top-1\,$=$\,\textit{(XX)}, превосходя
+        кластеризационные методы на 10--15\,\%
+        (таблица~\ref{tab:color_methods}).
+
+  \item \textbf{Классификация типа кузова.}
+        Модель достигает Accuracy top-1\,$=$\,\textit{(XX)}.
+        Сравнение ResNet18 и MobileNetV2 (таблица~\ref{tab:arch_comparison})
+        показывает, что \textit{(вставить вывод по результатам)}.
+
+  \item \textbf{Производительность конвейера.}
+        Полный конвейер обрабатывает видеопоток со скоростью \textit{(XX)} FPS
+        на GPU~T4. Основная задержка~--- EasyOCR (\textit{XX}\,\% от общего времени).
+
+  \item \textbf{Ограничения системы.}
+        EasyOCR является узким местом конвейера. Для встроенных систем
+        целесообразно рассмотреть специализированный лёгкий OCR-модуль.
+\end{enumerate}
+
+\textbf{Направления дальнейшего развития:}
+\begin{itemize}[nosep]
+  \item замена EasyOCR на CRNN-детектор, оптимизированный для российских номеров;
+  \item расширение классов цвета и типа кузова;
+  \item адаптация к ночным условиям съёмки (low-light enhancement);
+  \item квантизация и pruning для развёртывания на NVIDIA Jetson.
+\end{itemize}
+
+%% =====================  ЛИТЕРАТУРА  =========================
+\begin{thebibliography}{99}
+
+\bibitem{laroca2018}
+Laroca R., Severo E., Zanlorensi L.\,A. и др.
+\textit{A Robust Real-Time Automatic License Plate Recognition Based on the YOLO Detector}~//
+arXiv:1802.09567, 2018.
+
+\bibitem{laroca2021}
+Laroca R.
+\textit{Automatic License Plate Recognition in Real-World Scenarios}: PhD Thesis~//
+Universidade Federal do Paraná, 2021.
+
+\bibitem{abramov2019}
+Абрамов А.\,А.
+\textit{Алгоритм распознавания номерных знаков в условиях плохого качества видео}~//
+КиберЛенинка, 2019.
+
+\bibitem{survey2021}
+\textit{A Survey of Automatic License Plate Recognition Systems}~//
+Sensors, 21(9):3028, 2021.
+
+\bibitem{vmmr2024}
+\textit{Two decades of vehicle make and model recognition}~//
+Journal of King Saud University~--- CIS, 2024.
+
+\bibitem{siddiqui2016}
+Siddiqui A., Mammeri A., Boukerche A.
+\textit{Real-Time Vehicle Make and Model Recognition Based on SURF Features}~//
+IEEE ITS, 2016.
+
+\bibitem{manzoor2022}
+Manzoor M.\,A., Morgan Y.
+\textit{Vehicle Make and Model Recognition Using Deep Learning}~//
+Machine Learning and Knowledge Extraction, 1(2):36, 2022.
+
+\bibitem{kubatin2019}
+Кубатин И.\,А.
+\textit{Алгоритм определения цвета автомобиля методом кластеризации k-средних}~//
+КиберЛенинка, 2019.
+
+\bibitem{wu2013}
+Wu Y., Lim J., Yang M.-H.
+\textit{Online Object Tracking: A Benchmark}~//
+CVPR, 2013.
+
+\bibitem{su2015}
+Su H., Wu X., Chen S., Ji Q.
+\textit{Vehicle Color Recognition Using Convolutional Neural Network}~//
+IEEE ICIP, 2015.
+
+\end{thebibliography}
+
+\end{document}

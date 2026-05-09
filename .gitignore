@@ -1,0 +1,19 @@
+cat > .gitignore << 'EOF'
+# Секреты
+kaggle.json
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Большие файлы / модели
+*.pth
+*.zip
+*.h5
+diploma_*/
+/tmp/
+
+# macOS
+.DS_Store
+EOF
