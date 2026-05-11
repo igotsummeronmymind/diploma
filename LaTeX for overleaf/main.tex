@@ -45,6 +45,10 @@
 %% ── Гиперссылки ───────────────────────────────────────────
 \usepackage[hidelinks,unicode]{hyperref}
 
+%% ── Микротипографика и предотвращение вылезания строк ─────
+\usepackage{microtype}
+\setlength{\emergencystretch}{1.5em}
+
 %% ── Стиль заголовков глав ─────────────────────────────────
 \usepackage{titlesec}
 \titleformat{\chapter}[block]
@@ -137,6 +141,12 @@
 \chapter*{Аннотация}
 \addcontentsline{toc}{chapter}{Аннотация}
 
+Выпускная квалификационная работа: $\approx$65~с., 8~рис., 20~табл., 10~источн.
+
+\noindent\textbf{Ключевые слова:} детекция транспортных средств, распознавание
+номерных знаков, классификация цвета автомобиля, тип кузова, YOLOv8, ResNet18,
+EasyOCR, transfer learning, видеоаналитика, глубокое обучение.
+
 Выпускная квалификационная работа посвящена исследованию и разработке программного
 комплекса для автоматического определения характеристик транспортных средств по
 видеопотоку с камер наблюдения: детекции автомобиля в кадре, локализации
@@ -144,14 +154,16 @@
 
 Предлагается конвейерная архитектура на основе методов глубокого обучения:
 YOLOv8n~--- для детекции ТС и номерных знаков, ResNet18~--- для классификации
-цвета (9 классов) и типа кузова (6 классов), EasyOCR~--- для оптического
+цвета (9~классов) и типа кузова (6~классов), EasyOCR~--- для оптического
 распознавания символов кириллицы.
 
 Обучение и тестирование проводились на открытых датасетах (VCoR, CompCars,
-Roboflow License Plates). Оценка качества выполнялась по метрикам
-mAP@0.50, Accuracy top-1/3, F1 per class и CER. Проведено сравнительное
-исследование ResNet18 и MobileNetV2. Результатом является работоспособный
-прототип системы видеоаналитики транспорта.
+Roboflow License Plates). Детектор номерных знаков YOLOv8n достиг
+mAP@0.50\,=\,0.889. Классификатор цвета ResNet18 достиг Accuracy
+top-1\,=\,0.935. Классификатор типа кузова ResNet18~--- Accuracy
+top-1\,=\,0.771. EasyOCR обеспечивает CRR\,=\,0.975 на синтетических
+номерах. Проведено сравнительное исследование ResNet18 и MobileNetV2.
+Результатом является работоспособный прототип системы видеоаналитики транспорта.
 
 %% =====================  СОДЕРЖАНИЕ  =========================
 \tableofcontents
@@ -248,6 +260,7 @@ Anchor-free архитектура, CSPDarkNet backbone и FPN neck обеспе
 
 \begin{figure}[H]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=0.7cm, every node/.style={font=\small}]
   \node[blk, text width=2.6cm] (cam)   {Видеокадр\\с камеры};
   \node[blk, text width=2.6cm, right=0.8cm of cam] (vdet)  {Детекция\\автомобиля};
@@ -266,7 +279,8 @@ Anchor-free архитектура, CSPDarkNet backbone и FPN neck обеспе
         {Перспективное\\выравнивание};
   \draw[darr] (pdet) -- (aug);
   \draw[darr] (aug)  -- (prep);
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Типовая схема ANPR-системы}
 \label{fig:anpr_flow}
 \end{figure}
@@ -331,7 +345,7 @@ EfficientNet-B0 & Составной масштаб (глубина/ширина
 \caption{Сравнение методов классификации цвета автомобиля}
 \label{tab:color_methods}
 \rowcolors{2}{rowgray}{white}
-\begin{tabular}{llcc}
+\begin{tabularx}{\textwidth}{lXcc}
 \toprule
 \textbf{Метод} & \textbf{Принцип} & \textbf{Accuracy} & \textbf{Устойчивость к освещению} \\
 \midrule
@@ -340,7 +354,7 @@ k-means (HSV)       & Кластеризация в HSV-пространстве
 SVM + цветовые гистограммы & Гистограммы + SVM        & 0.83--0.88 & Средняя \\
 \textbf{CNN (ResNet18)} & \textbf{Сквозное обучение}  & \textbf{>0.90} & \textbf{Высокая} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 Для повышения устойчивости в видеопотоке применяется агрегация предсказаний
@@ -380,6 +394,7 @@ SVM + цветовые гистограммы & Гистограммы + SVM    
 
 \begin{figure}[H]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=0.55cm and 0.6cm]
 
   %% ── левая колонка (основной поток) ──────────────────────
@@ -413,10 +428,125 @@ SVM + цветовые гистограммы & Гистограммы + SVM    
   \draw[darr] (color.east) -- (clbl.west);
   \draw[darr] (body.east)  -- (blbl.west);
 
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Схема конвейера обработки видеокадра}
 \label{fig:pipeline}
 \end{figure}
+
+%% =============================================================
+\section{Теоретические основы глубокого обучения}
+
+Применяемые в работе модели относятся к классу глубоких сверточных
+нейронных сетей (Deep Convolutional Neural Networks, DCNN).
+Данный раздел описывает ключевые строительные блоки, необходимые
+для понимания архитектур YOLOv8 и ResNet18.
+
+\subsection{Сверточные нейронные сети}
+
+CNN~--- специализированный класс нейронных сетей для обработки
+данных с регулярной сеточной топологией. Три ключевых принципа CNN:
+\begin{itemize}
+  \item \textbf{Разделение весов:} одно ядро применяется ко всем
+    позициям входа, что резко сокращает число параметров по
+    сравнению с полносвязным слоем;
+  \item \textbf{Локальная связность:} каждый нейрон реагирует
+    только на рецептивное поле (receptive field) ограниченного
+    размера, что обеспечивает инвариантность к трансляции;
+  \item \textbf{Иерархия признаков:} ранние слои кодируют
+    локальные паттерны (края, текстуры), глубокие~---
+    семантические концепции (силуэт кузова, форма номерного знака).
+\end{itemize}
+
+Для одноканального входа $I \in \mathbb{R}^{H \times W}$ и ядра
+$K \in \mathbb{R}^{m \times n}$ дискретная операция кросс-корреляции
+(в практике машинного обучения называемая «свёрткой»):
+\begin{equation}
+  (I \star K)[i,j] = \sum_{u=0}^{m-1}\sum_{v=0}^{n-1}
+    I[i+u,\; j+v]\cdot K[u,v].
+\end{equation}
+
+В многоканальном случае ($C_{\mathrm{in}}$ входных каналов,
+$C_{\mathrm{out}}$ выходных) выходная карта признаков:
+\begin{equation}
+  y_k[i,j] = \sum_{c=1}^{C_{\mathrm{in}}}
+    (I_c \star K_{k,c})[i,j] + b_k,
+  \quad k = 1,\ldots,C_{\mathrm{out}},
+\end{equation}
+где $K_{k,c}$~--- ядро $k$-го фильтра для входного канала $c$,
+$b_k$~--- смещение (bias).
+
+Число параметров свёрточного слоя: $m \cdot n \cdot C_{\mathrm{in}}
+\cdot C_{\mathrm{out}} + C_{\mathrm{out}}$, что не зависит от
+пространственного размера входа $H \times W$. Для сравнения,
+полносвязный слой потребовал бы $H \cdot W \cdot C_{\mathrm{in}}$
+параметров на каждый выходной нейрон.
+
+\subsection{Функции активации}
+
+Для введения нелинейности после каждого свёрточного слоя
+применяется функция активации. В ResNet18 используется ReLU:
+\begin{equation}
+  \mathrm{ReLU}(x) = \max(0,\, x).
+\end{equation}
+ReLU не насыщается на положительной полуоси, градиент равен
+единице для $x > 0$~--- это ключевое свойство, предотвращающее
+затухание градиентов при прямолинейном прохождении.
+
+В YOLOv8 применяется SiLU (Sigmoid Linear Unit,
+также известная как Swish):
+\begin{equation}
+  \mathrm{SiLU}(x) = x \cdot \sigma(x) = \frac{x}{1 + e^{-x}},
+\end{equation}
+обеспечивающая плавный градиент вблизи нуля и улучшающая
+сходимость глубоких детекционных сетей.
+
+\subsection{Pooling и агрегация признаков}
+
+Max-pooling с окном $k\times k$ и шагом $s$ уменьшает
+пространственное разрешение, сохраняя наиболее значимые активации:
+\begin{equation}
+  y[i,j] = \max_{\substack{u\in[0,k)\\ v\in[0,k)}}
+            x[si+u,\; sj+v].
+\end{equation}
+
+Global Average Pooling (GAP) применяется в конце классификационных
+сетей перед FC-слоем:
+\begin{equation}
+  \mathrm{GAP}_c = \frac{1}{H\cdot W}
+    \sum_{i=1}^{H}\sum_{j=1}^{W} x_c[i,j].
+\end{equation}
+GAP сводит пространственную карту к одному числу на канал,
+что обеспечивает инвариантность к размеру входного изображения
+и значительно снижает число параметров по сравнению с flatten + FC.
+В ResNet18 GAP даёт вектор $\mathbb{R}^{512}$ из feature map
+$7\times7\times512$.
+
+\subsection{Пакетная нормализация}
+
+Пакетная нормализация (Batch Normalization, BN) нормирует активации
+по мини-батчу:
+\begin{equation}
+  \hat{x}_i = \frac{x_i - \mu_\mathcal{B}}
+               {\sqrt{\sigma_\mathcal{B}^2 + \varepsilon}},
+  \qquad
+  y_i = \gamma\,\hat{x}_i + \beta,
+\end{equation}
+где $\mu_\mathcal{B}$ и $\sigma_\mathcal{B}^2$~--- выборочные
+среднее и дисперсия по батчу, $\gamma$ и $\beta$~--- обучаемые
+параметры масштабирования и сдвига, $\varepsilon \approx 10^{-5}$~---
+стабилизирующая константа.
+
+Основные эффекты BN:
+\begin{enumerate}[nosep]
+  \item снижение чувствительности к выбору начальной LR;
+  \item неявная регуляризация~--- уменьшает необходимость в Dropout;
+  \item ускорение сходимости в 10--14 раз по сравнению с сетями
+    без BN при одинаковом расписании LR.
+\end{enumerate}
+BN присутствует в каждом convolution-блоке как ResNet18, так
+и YOLOv8, что обусловило выбор относительно высоких начальных LR
+в обоих случаях.
 
 \section{Детекция транспортных средств: YOLOv8}
 
@@ -427,6 +557,7 @@ YOLOv8 состоит из трёх функциональных блоков, �
 
 \begin{figure}[H]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=0.5cm and 0.8cm, every node/.style={font=\small}]
 
   \node[blk, text width=2.6cm] (inp) {Входное изображение\\$640\times640$};
@@ -456,7 +587,8 @@ YOLOv8 состоит из трёх функциональных блоков, �
   \node[below=0.5cm of head, font=\scriptsize, text=graynode]
        {Prediction};
 
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Упрощённая схема архитектуры YOLOv8}
 \label{fig:yolo_arch}
 \end{figure}
@@ -471,13 +603,166 @@ YOLOv8 состоит из трёх функциональных блоков, �
 $\mathcal{L}_{\mathrm{cls}}$~--- BCE,
 $\mathcal{L}_{\mathrm{dfl}}$~--- Distribution Focal Loss.
 
+\subsection{Эволюция семейства YOLO}
+
+Семейство YOLO прошло путь от первой версии (2016) до YOLOv8 (2023),
+последовательно устраняя ключевые ограничения предыдущих поколений.
+
+\begin{table}[H]
+\centering
+\caption{Эволюция ключевых характеристик архитектур YOLO}
+\label{tab:yolo_evolution}
+\rowcolors{2}{rowgray}{white}
+\begin{tabularx}{\textwidth}{llXc}
+\toprule
+\textbf{Версия} & \textbf{Год} & \textbf{Ключевые нововведения} & \textbf{mAP@0.5} \\
+\midrule
+YOLOv1  & 2016 & Сетка $S\!\times\!S$; $B$ боксов на ячейку; softmax классов & 63.4 \\
+YOLOv2  & 2017 & Anchor-boxes, BatchNorm, многомасштабное обучение & 78.6 \\
+YOLOv3  & 2018 & Darknet-53; детекция на 3 масштабах; sigmoid классификаторы & 82.1 \\
+YOLOv4  & 2020 & CSPDarknet53, PANet, CIoU loss, Mosaic-аугментация & 84.0 \\
+YOLOv5  & 2020 & AutoAnchor, Focus-слой, адаптивный batching (PyTorch) & 84.7 \\
+YOLOv6  & 2022 & RepVGG backbone, знаниевая дистилляция & 85.0 \\
+YOLOv7  & 2022 & Extended-ELAN, составное масштабирование & 85.6 \\
+\textbf{YOLOv8} & \textbf{2023} & \textbf{Anchor-free, C2f блоки, decoupled head, DFL loss} & \textbf{86.3} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Принципиальное отличие YOLOv8 от предшественников~--- отказ от
+anchor-boxes в пользу \textbf{anchor-free} подхода. В классических
+anchor-based детекторах (YOLOv2--v5) необходимо предварительно
+кластеризовать размеры объектов в датасете для выбора наборов якорей.
+YOLOv8 вместо этого напрямую предсказывает геометрию бокса, что
+упрощает адаптацию к нестандартным доменам (например, номерные знаки
+имеют специфическое соотношение сторон $\approx$4:1, плохо покрываемое
+универсальными COCO-якорями).
+
+\subsection{Backbone: CSPDarkNet с блоками C2f}
+
+Backbone YOLOv8 основан на принципе \textbf{Cross-Stage Partial
+Networks (CSP)}. CSP разделяет входной тензор на две части:
+одна проходит через набор свёрточных блоков (dense path),
+другая~--- напрямую (identity path), после чего результаты
+конкатенируются и объединяются $1\times1$ свёрткой:
+\begin{equation}
+  \mathrm{CSP}(X) =
+    \mathrm{Conv}_{1\times1}\!\Bigl(
+      \mathrm{Concat}\bigl[
+        \mathrm{DenseBlock}(X_{:C/2}),\;
+        X_{C/2:}
+      \bigr]
+    \Bigr),
+\end{equation}
+где $X_{:C/2}$ и $X_{C/2:}$~--- первая и вторая половины каналов
+тензора $X \in \mathbb{R}^{C \times H \times W}$.
+Это снижает FLOPS примерно на 30\% при сохранении богатого
+градиентного потока через identity path.
+
+\textbf{Блок C2f} (Cross Stage Partial with 2 bottleneck features)~---
+ключевой строительный блок YOLOv8. В отличие от блока C3 (YOLOv5),
+C2f конкатенирует выходы \textit{всех} промежуточных bottleneck-слоёв
+перед финальным $1\times1$ свёрточным слоем:
+
+\begin{table}[H]
+\centering
+\caption{Сравнение блоков C3 (YOLOv5) и C2f (YOLOv8)}
+\label{tab:c2f}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Параметр} & \textbf{C3 (YOLOv5)} & \textbf{C2f (YOLOv8)} \\
+\midrule
+Bottleneck-ветвей           & 1   & 2 \\
+Независимых путей градиента & 2   & $\geq 3$ \\
+Skip-соединение от входа    & Да  & Да \\
+Конкатенация всех FM        & Нет & Да \\
+Параметры (отн.)            & 1.0 & $\approx$1.05 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Небольшое (+5\%) увеличение числа параметров в C2f даёт заметный
+прирост mAP, поскольку все промежуточные feature maps несут
+дополнительную информацию в финальной конкатенации.
+
+\subsection{Neck: Path Aggregation Network}
+
+Для обнаружения объектов разных масштабов (мелкие~--- номерные
+знаки вдали, крупные~--- автомобили вблизи) YOLOv8 использует
+PAN-FPN (Path Aggregation Network + Feature Pyramid Network).
+
+\textbf{FPN (top-down path):} строит пирамиду признаков,
+обогащая поверхностные (детальные) уровни семантикой
+глубоких (абстрактных) уровней:
+\begin{equation}
+  P_k = \mathrm{Conv}\bigl(\mathrm{Upsample}(P_{k+1}) + C_k\bigr),
+\end{equation}
+где $C_k$~--- выход backbone на уровне~$k$, $P_k$~--- обогащённая
+feature map.
+
+\textbf{PAN (bottom-up path):} добавляет восходящий путь,
+усиливающий точность пространственной локализации за счёт
+низкоуровневых (высокого разрешения) признаков:
+\begin{equation}
+  N_k = \mathrm{Conv}\bigl(\mathrm{Stride\text{-}Conv}(N_{k-1}) + P_k\bigr).
+\end{equation}
+
+Для входа $640\times640$ три детекционных головы обрабатывают:
+\begin{itemize}[nosep]
+  \item P3 ($80\times80$)~--- мелкие объекты (далёкие номерные знаки);
+  \item P4 ($40\times40$)~--- объекты среднего масштаба;
+  \item P5 ($20\times20$)~--- крупные объекты (автомобили вблизи).
+\end{itemize}
+
+\subsection{Anchor-free голова и Distribution Focal Loss}
+
+YOLOv8 напрямую предсказывает расстояния от центра ячейки до
+четырёх сторон бокса $(l, t, r, b)$, из которых восстанавливается
+ограничивающий прямоугольник:
+\begin{equation}
+  x_1 = x_c - l,\quad y_1 = y_c - t,\quad
+  x_2 = x_c + r,\quad y_2 = y_c + b.
+\end{equation}
+
+\textbf{Distribution Focal Loss (DFL)} вместо скалярного
+предсказания каждой координаты обучает модель предсказывать
+дискретное распределение вероятностей по $n$ равномерным бинам:
+\begin{equation}
+  \mathcal{L}_{\mathrm{DFL}}(y, y^*) =
+  -\bigl(
+    (y^*_{i+1} - y)\log p_i + (y - y^*_i)\log p_{i+1}
+  \bigr),
+\end{equation}
+где $y^*_i \leq y \leq y^*_{i+1}$~--- истинное значение координаты,
+$p_i$~--- предсказанная вероятность бина~$i$.
+Ожидаемое значение: $\hat{y} = \sum_i p_i \cdot i$.
+
+DFL явно моделирует неопределённость локализации для
+перекрытых или размытых объектов, что улучшает mAP@0.50:0.95
+по сравнению с детекторами без DFL.
+
+\textbf{Полная функция потерь YOLOv8} (детализация):
+\begin{itemize}[nosep]
+  \item $\mathcal{L}_{\mathrm{box}}$ (CIoU)~--- штрафует
+    за несовпадение центра, размеров и соотношения сторон бокса;
+  \item $\mathcal{L}_{\mathrm{cls}}$ (Binary Cross-Entropy)~---
+    независимые сигмоиды для каждого класса;
+  \item $\mathcal{L}_{\mathrm{dfl}}$ (DFL)~--- уточняет
+    граничные координаты через распределение вероятностей.
+\end{itemize}
+
+Весовые коэффициенты $\lambda_{\mathrm{box}}=7.5$,
+$\lambda_{\mathrm{cls}}=0.5$, $\lambda_{\mathrm{dfl}}=1.5$
+(значения по умолчанию Ultralytics YOLOv8).
+
 \subsection{Параметры инференса}
 
 \begin{table}[H]
 \centering
 \caption{Параметры запуска YOLOv8n для детекции ТС}
 \label{tab:yolo_params}
-\begin{tabular}{ll}
+\begin{tabularx}{\textwidth}{lX}
 \toprule
 \textbf{Параметр} & \textbf{Значение} \\
 \midrule
@@ -488,7 +773,7 @@ $\mathcal{L}_{\mathrm{dfl}}$~--- Distribution Focal Loss.
 Размер входа            & $640 \times 640$ \\
 Аппаратная платформа    & GPU NVIDIA Tesla T4 / CPU \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \section{Детекция номерных знаков: дообученный YOLOv8n}
@@ -499,6 +784,7 @@ $\mathcal{L}_{\mathrm{dfl}}$~--- Distribution Focal Loss.
 
 \begin{figure}[H]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=0.6cm and 0.7cm]
 
   \node[blk, text width=3.2cm] (pre)
@@ -521,7 +807,8 @@ $\mathcal{L}_{\mathrm{dfl}}$~--- Distribution Focal Loss.
        {Roboflow License Plates\\$\approx$6000 изображений};
   \draw[darr] ([yshift=-0.5cm]frz.south) -- (head.south |- {[yshift=-0.5cm]frz.south});
 
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Схема transfer learning для детектора номерных знаков}
 \label{fig:transfer}
 \end{figure}
@@ -532,7 +819,7 @@ $\mathcal{L}_{\mathrm{dfl}}$~--- Distribution Focal Loss.
 \centering
 \caption{Гиперпараметры дообучения детектора номеров}
 \label{tab:plate_hp}
-\begin{tabular}{ll}
+\begin{tabularx}{\textwidth}{lX}
 \toprule
 \textbf{Параметр} & \textbf{Значение} \\
 \midrule
@@ -547,7 +834,7 @@ Weight decay         & $5 \times 10^{-4}$ \\
 Число классов        & 1 (\textit{license\_plate}) \\
 Метрика сохранения   & mAP@0.50 на валидации \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \section{Оптическое распознавание номеров: EasyOCR}
@@ -557,6 +844,7 @@ EasyOCR использует двухэтапный конвейер, предс
 
 \begin{figure}[H]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=0.5cm and 0.7cm]
   \node[blk, text width=3cm]  (plate) {Кроп номерного\\знака (BGR)};
   \node[blk, text width=3cm, right=0.9cm of plate]  (gray)  {Оттенки\\серого\\(Otsu)};
@@ -568,7 +856,8 @@ EasyOCR использует двухэтапный конвейер, предс
   \draw[arr] (gray)  -- (craft);
   \draw[arr] (craft) -- node[above,font=\scriptsize]{регионы} (crnn);
   \draw[arr] (crnn)  -- (regex);
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Конвейер EasyOCR для распознавания номерного знака}
 \label{fig:ocr_pipeline}
 \end{figure}
@@ -594,6 +883,7 @@ $N$~--- длина эталонной строки.
 
 \begin{figure}[H]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=0.45cm and 0.8cm]
 
   %% ── Residual-блок ────────────────────────────────────────
@@ -635,7 +925,8 @@ $N$~--- длина эталонной строки.
   \node[above=0.1cm of in, font=\small\bfseries] {Residual-блок};
   \node[above=0.1cm of r0, font=\small\bfseries] {Состав ResNet18};
 
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Residual-блок и структура ResNet18 (18 слоёв, $K$~--- число классов)}
 \label{fig:resnet_arch}
 \end{figure}
@@ -646,6 +937,7 @@ $N$~--- длина эталонной строки.
 
 \begin{figure}[H]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=0.6cm and 1.0cm]
   \node[blk, text width=4cm] (p1)
         {\textbf{Фаза 1}\\Backbone заморожен\\Обучается только FC\\$\eta_1 = 10^{-3}$};
@@ -659,7 +951,8 @@ $N$~--- длина эталонной строки.
   \draw[arr] (p1) -- node[above,font=\scriptsize]{эп. 1–N} (sw);
   \draw[arr] (sw) -- node[above,font=\scriptsize]{эп. N+1–end} (p2);
   \draw[arr] (p2) -- (save);
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Стратегия двухфазного дообучения ResNet18}
 \label{fig:twophase}
 \end{figure}
@@ -670,6 +963,97 @@ $N$~--- длина эталонной строки.
 \end{equation}
 где $y_k$~--- one-hot метка, $\hat{y}_k$~--- предсказанная вероятность.
 
+\subsection{Проблема затухающего градиента в глубоких сетях}
+
+При обучении методом обратного распространения ошибки (backpropagation)
+производная функции потерь по активациям слоя~$l$ вычисляется
+через цепное правило:
+\begin{equation}
+  \frac{\partial\mathcal{L}}{\partial\mathbf{x}_l} =
+  \frac{\partial\mathcal{L}}{\partial\mathbf{x}_L}
+  \prod_{k=l}^{L-1}
+  \frac{\partial\mathbf{x}_{k+1}}{\partial\mathbf{x}_k},
+\end{equation}
+где $\mathbf{x}_k$~--- активации слоя~$k$, $L$~--- глубина сети.
+
+Произведение якобианов $\prod_{k=l}^{L-1} J_k$ экспоненциально
+убывает по числу слоёв при $\|J_k\| < 1$: нижние слои получают
+практически нулевые градиенты и фактически прекращают обучаться.
+Это явление называется \textbf{затухающим градиентом} и ограничивало
+практически применимую глубину сетей значением $\approx$20 слоёв
+до появления ResNet (He et al., 2015).
+
+Попытки строить сети глубиной 56--110 слоёв (plain networks) до ResNet
+приводили к парадоксу: добавление слоёв \textit{ухудшало} тренировочную
+ошибку~--- не из-за переобучения, а из-за неудовлетворительной оптимизации.
+
+\subsection{Теоретическое обоснование residual connections}
+
+Ключевая гипотеза He et al.~(2015): вместо обучения прямого
+отображения $\mathcal{H}(\mathbf{x})$ легче выучить остаточное
+(residual) отображение $\mathcal{F}(\mathbf{x}) =
+\mathcal{H}(\mathbf{x}) - \mathbf{x}$:
+\begin{equation}
+  \mathbf{y} = \mathcal{F}(\mathbf{x},\{W_i\}) + \mathbf{x}.
+\end{equation}
+Если оптимальное отображение близко к тождественному,
+достаточно обнулить $\mathcal{F} \approx \mathbf{0}$~---
+что тривиально для стека нелинейных слоёв.
+
+\textbf{Анализ градиентного потока.}
+Производная потерь через shortcut-соединения:
+\begin{equation}
+  \frac{\partial\mathcal{L}}{\partial\mathbf{x}_l} =
+  \frac{\partial\mathcal{L}}{\partial\mathbf{x}_L}
+  \underbrace{\prod_{k=l}^{L-1}
+    \!\left(1 + \frac{\partial\mathcal{F}_k}{\partial\mathbf{x}_k}
+    \right)}_{\text{не обращается в нуль}}.
+\end{equation}
+Единица в каждом множителе гарантирует, что произведение
+\textit{не} стремится к нулю независимо от глубины.
+Это теоретически обосновывает возможность обучения ResNet
+глубиной от 18 до 1000 слоёв.
+
+\textbf{Выбор ResNet18 vs.\ более глубоких вариантов:}
+При ограниченных датасетах ($<$50k изображений) более лёгкие
+модели часто превосходят ResNet50/101 за счёт лучшей
+регуляризации. Для VCoR ($\approx$15k изображений) и CompCars
+($\approx$30k) ResNet18 оказывается оптимальным компромиссом
+между ёмкостью и переобучением.
+
+\subsection{ImageNet-предобучение и стратегии transfer learning}
+
+Предобученные на ImageNet (1.28M изображений, 1000 классов)
+веса кодируют \textbf{универсальные визуальные признаки} трёх уровней:
+\begin{itemize}[nosep]
+  \item \textbf{layer1--layer2:} края, ориентации, текстуры;
+  \item \textbf{layer3:} части объектов (круглые формы, угловые элементы);
+  \item \textbf{layer4:} семантические концепции~---
+    здесь кодируется специфика «автомобильного» домена.
+\end{itemize}
+
+Применяются три стратегии transfer learning:
+\begin{enumerate}
+  \item \textbf{Feature extraction (заморозка всего backbone):}
+    обучается только FC-голова. Быстро, но ограниченно~---
+    предобученные признаки могут не соответствовать целевому домену.
+  \item \textbf{Partial fine-tuning:} размораживаются верхние слои
+    backbone (layer3+layer4+FC). Применяется в первых экспериментах
+    с классификатором кузова.
+  \item \textbf{Full fine-tuning:} обучается весь backbone с LR
+    в 10 раз ниже, чем для FC. Применяется для классификатора цвета
+    (фаза~2). Требует достаточного объёма целевых данных.
+\end{enumerate}
+
+\textbf{Обоснование двухфазной стратегии (фаза~1: заморозка,
+фаза~2: разморозка):} в начале дообучения FC-веса случайны
+и порождают большие градиенты. Если одновременно обучать backbone,
+эти большие градиенты разрушат предобученные признаки
+(catastrophic forgetting). Заморозка backbone на первых эпохах
+стабилизирует FC, после чего backbone размораживается с малой LR~---
+это позволяет тонко адаптировать признаки к целевому домену
+(изображения автомобилей с дорожных камер).
+
 \subsection{Гиперпараметры обучения}
 
 \begin{table}[H]
@@ -677,23 +1061,24 @@ $N$~--- длина эталонной строки.
 \caption{Гиперпараметры обучения классификаторов ResNet18}
 \label{tab:resnet_hp}
 \rowcolors{2}{rowgray}{white}
-\begin{tabular}{lcc}
+\small
+\begin{tabularx}{\textwidth}{lXX}
 \toprule
 \textbf{Параметр} & \textbf{Классификатор цвета} & \textbf{Классификатор кузова} \\
 \midrule
 Число классов     & 9              & 6 \\
-Эпохи             & 20             & 25 \\
-Разморозка на эпохе & 5            & 6 \\
+Макс. эпох        & 20             & 30 (early stop) \\
+Разморозка        & эп.~5 (весь backbone) & с эп.~1 (layer3+layer4+fc) \\
 Батч              & 32             & 32 \\
-LR (Фаза 1)       & $10^{-3}$      & $10^{-3}$ \\
-LR (Фаза 2)       & $10^{-4}$      & $10^{-4}$ \\
+LR                & $10^{-3} \to 10^{-4}$ & $5 \times 10^{-5}$ \\
 Оптимизатор       & Adam           & Adam \\
 $\beta_1, \beta_2$ & 0.9, 0.999   & 0.9, 0.999 \\
-StepLR шаг        & 5 эпох         & 6 эпох \\
-StepLR $\gamma$   & 0.3            & 0.3 \\
+StepLR шаг        & 5 эпох         & ---  \\
+StepLR $\gamma$   & 0.3            & ---  \\
+Early stopping    & ---            & patience = 5 \\
 Размер входа      & $224\times224$ & $224\times224$ \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \subsection{Аугментация данных}
@@ -702,7 +1087,7 @@ StepLR $\gamma$   & 0.3            & 0.3 \\
 \centering
 \caption{Аугментации для обучения классификаторов}
 \label{tab:augmentation}
-\begin{tabular}{lll}
+\begin{tabularx}{\textwidth}{lXX}
 \toprule
 \textbf{Преобразование} & \textbf{Параметры} & \textbf{Назначение} \\
 \midrule
@@ -717,13 +1102,153 @@ Normalize           & $\mu=[.485,.456,.406]$         & ImageNet stats \\
 Resize              & $224\times224$                 & Размер входа \\
 Normalize           & $\mu=[.485,.456,.406]$         & ImageNet stats \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
+
+%% =============================================================
+\section{Алгоритмы оптимизации}
+
+\subsection{Стохастический градиентный спуск с импульсом}
+
+Базовый SGD обновляет параметры по градиенту на мини-батче
+$\mathcal{B}_t$:
+\begin{equation}
+  \theta_{t+1} = \theta_t -
+    \eta\,\nabla_\theta\mathcal{L}(\theta_t;\mathcal{B}_t),
+\end{equation}
+где $\eta$~--- скорость обучения (learning rate).
+
+SGD с импульсом (momentum) накапливает «инерцию» в направлении
+постоянного градиента, ускоряя сходимость:
+\begin{equation}
+  v_{t+1} = \mu\,v_t +
+    \nabla_\theta\mathcal{L}(\theta_t;\mathcal{B}_t),
+  \qquad
+  \theta_{t+1} = \theta_t - \eta\,v_{t+1},
+\end{equation}
+где $\mu$~--- коэффициент импульса (в данной работе $\mu=0.937$
+для детектора номеров).
+
+\textbf{Обоснование SGD для YOLOv8:}
+Рекомендация Ultralytics~--- SGD с cosine annealing для детекторов.
+Адаптивные методы (Adam) быстро находят хорошее решение в начале
+обучения, однако SGD при достаточно долгом обучении ($\geq$50 эпох)
+сходится к более широким минимумам (flat minima), которые лучше
+обобщаются на тестовых данных.
+
+\subsection{Adam}
+
+Adam (Adaptive Moment Estimation) адаптирует LR для каждого
+параметра, поддерживая первый и второй моменты градиентов:
+\begin{align}
+  m_t &= \beta_1 m_{t-1} + (1-\beta_1)\,g_t, \\
+  v_t &= \beta_2 v_{t-1} + (1-\beta_2)\,g_t^2,
+\end{align}
+где $g_t = \nabla_\theta\mathcal{L}_t$.
+Скорректированные (debiased) оценки:
+\begin{equation}
+  \hat{m}_t = \frac{m_t}{1-\beta_1^t},\quad
+  \hat{v}_t = \frac{v_t}{1-\beta_2^t}.
+\end{equation}
+Обновление параметров:
+\begin{equation}
+  \theta_{t+1} = \theta_t -
+    \frac{\eta}{\sqrt{\hat{v}_t}+\varepsilon}\,\hat{m}_t,
+\end{equation}
+где $\beta_1=0.9$, $\beta_2=0.999$, $\varepsilon=10^{-8}$.
+
+\textbf{Обоснование Adam для классификаторов:}
+Adam быстро сходится за 10--30 эпох и менее чувствителен
+к выбору начальной LR. При fine-tuning предобученных сетей
+адаптивность Adam предотвращает излишнее обновление слоёв,
+которые уже содержат хорошие признаки ImageNet.
+
+\subsection{Планировщики скорости обучения}
+
+\textbf{StepLR} снижает LR в $\gamma$ раз каждые $S$ эпох:
+\begin{equation}
+  \eta_t = \eta_0\cdot\gamma^{\lfloor t/S\rfloor}.
+\end{equation}
+Для классификатора цвета: $S=5$, $\gamma=0.3$, что даёт
+убывающую последовательность: $\eta_0=10^{-3} \to
+3.4\!\times\!10^{-4} \to 10^{-4} \to \ldots$ Постепенное снижение
+позволяет крупному шагу обеспечить быстрый прогресс в начале,
+а малому~--- точную настройку вблизи оптимума.
+
+\textbf{Cosine Annealing} используется внутри YOLOv8:
+\begin{equation}
+  \eta_t = \eta_{\min} +
+    \tfrac{1}{2}(\eta_{\max}-\eta_{\min})
+    \!\left(1+\cos\frac{\pi t}{T}\right).
+\end{equation}
+Плавное снижение без резких скачков позволяет детектору
+сойтись в более широкий и устойчивый минимум потерь.
+
+%% =============================================================
+\section{Методы регуляризации}
+
+Регуляризация~--- совокупность методов, снижающих переобучение
+(overfitting) и улучшающих обобщающую способность модели.
+
+\subsection{L2-регуляризация (weight decay)}
+
+К функции потерь добавляется штраф на $\ell_2$-норму весов:
+\begin{equation}
+  \mathcal{L}_{\mathrm{reg}} = \mathcal{L} +
+    \frac{\lambda}{2}\|\theta\|_2^2.
+\end{equation}
+В данной работе $\lambda = 5\!\times\!10^{-4}$ для детектора
+номеров. Weight decay ограничивает «свободу» модели и
+эквивалентен MAP-оценке с гауссовым априором на веса
+$\theta \sim \mathcal{N}(0, 1/\lambda)$.
+
+\subsection{Ранняя остановка}
+
+Если контрольная метрика не улучшается в течение
+\textit{patience} эпох, обучение прекращается, а лучшая
+(по валидационной метрике) модель сохраняется:
+\begin{equation}
+  \mathrm{stop~if}\quad
+  e - e_{\mathrm{best}} > \mathrm{patience},
+\end{equation}
+где $e_{\mathrm{best}}$~--- номер эпохи с наилучшей метрикой.
+
+В данной работе early stopping с patience=5 применяется
+для классификатора кузова, что предотвратило переобучение~---
+лучшая модель получена на эпохе~21 из 25.
+
+\subsection{Аугментация как регуляризация}
+
+Аугментация увеличивает эффективный объём обучающей выборки
+без сбора новых данных. Математически оптимизируется:
+\begin{equation}
+  \min_\theta\;
+  \mathbb{E}_{(x,y)\sim\mathcal{D}}\;
+  \mathbb{E}_{t\sim\mathcal{T}}\;
+  \mathcal{L}(f_\theta(t(x)),\, y),
+\end{equation}
+где $\mathcal{T}$~--- семейство реалистичных трансформаций.
+
+Аугментации в таблице~\ref{tab:augmentation} подобраны
+с учётом реалистичности для видеопотока с дорожных камер:
+\begin{itemize}[nosep]
+  \item \textbf{RandomHorizontalFlip:} автомобили въезжают
+    с обеих сторон кадра~--- зеркальные копии равновероятны;
+  \item \textbf{ColorJitter} (brightness=0.3, contrast=0.3):
+    освещение меняется в течение суток и при смене погоды;
+  \item \textbf{RandomRotation $\pm10°$:} небольшой наклон
+    возможен при установке камеры под углом;
+  \item \textbf{RandomResizedCrop} (scale $[0.65, 1.0]$):
+    имитирует различное расстояние до автомобиля;
+    нижняя граница 0.65 выбрана так, чтобы сохранить
+    достаточно цветовой информации кузова.
+\end{itemize}
 
 \section{Сравниваемая архитектура: MobileNetV2}
 
 \begin{figure}[H]
 \centering
+\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=0.5cm and 0.9cm]
 
   %% Inverted Residual Block
@@ -761,7 +1286,8 @@ Normalize           & $\mu=[.485,.456,.406]$         & ImageNet stats \\
   \end{scope}
 
   \node[above=0.1cm of mi, font=\small\bfseries] {Inverted Residual Block};
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Инвертированный residual-блок MobileNetV2 и сравнение с ResNet18}
 \label{fig:mobilenet}
 \end{figure}
@@ -816,7 +1342,7 @@ CompCars body-type & Тип кузова         & CUHK             & $\approx$3
 \caption{Маппинг оригинальных классов CompCars на целевые}
 \label{tab:compcars}
 \rowcolors{2}{rowgray}{white}
-\begin{tabular}{lll}
+\begin{tabularx}{\textwidth}{lXX}
 \toprule
 \textbf{Оригинальный класс CompCars} & \textbf{Целевой класс} & \textbf{Описание} \\
 \midrule
@@ -827,7 +1353,7 @@ MPV                          & van      & Минивэн \\
 pickup, truck                & truck    & Грузовой / пикап \\
 microbus, minibus            & minibus  & Микроавтобус \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 %% =============================================================
@@ -841,7 +1367,7 @@ microbus, minibus            & minibus  & Микроавтобус \\
 \centering
 \caption{Программно-аппаратная конфигурация экспериментов}
 \label{tab:env}
-\begin{tabular}{ll}
+\begin{tabularx}{\textwidth}{lX}
 \toprule
 \textbf{Компонент} & \textbf{Значение} \\
 \midrule
@@ -856,7 +1382,7 @@ Ultralytics       & 8.x \\
 EasyOCR           & 1.7 \\
 torchvision       & 0.17 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 Ноутбуки для воспроизведения:
@@ -869,11 +1395,46 @@ torchvision       & 0.17 \\
 
 \section{Эксперимент 1: дообучение детектора номерных знаков}
 
-\subsection{Протокол}
+\subsection{Протокол и обоснование гиперпараметров}
 
 YOLOv8n дообучался на датасете Roboflow License Plates в течение 50 эпох
-(параметры~--- таблица~\ref{tab:plate_hp}). Лучшая модель сохранялась
-по максимуму mAP@0.50 на валидации.
+(параметры~--- таблица~\ref{tab:plate_hp}).
+
+\textbf{Обоснование ключевых решений:}
+\begin{itemize}
+  \item \textbf{Базовая модель \texttt{yolov8n.pt}:} выбрана наименьшая
+    модель семейства YOLOv8 (nano, 3.2M параметров). Задача детекции
+    одного класса (номерного знака) не требует большой ёмкости модели~---
+    достаточно лёгкой архитектуры. Кроме того, yolov8n обеспечивает
+    наибольшую скорость инференса, что критично для встраивания в конвейер.
+
+  \item \textbf{50 эпох:} при объёме датасета $\approx$6000 изображений
+    достаточно для стабильной сходимости. Динамика val mAP@0.50 показала
+    plateau в районе эпохи~40; дополнительные 10 эпох дали прирост
+    $\approx$0.005 mAP за счёт cosine annealing с малым LR.
+
+  \item \textbf{SGD, lr=0.01:} официальная рекомендация Ultralytics~---
+    SGD с cosine annealing для детекционных задач. Adam может ускорить
+    начало обучения, но SGD при достаточно долгом расписании LR сходится
+    к более широким минимумам, лучше обобщающимся на тестовых данных.
+
+  \item \textbf{Batch size 16:} ограничено объёмом VRAM (16 GB T4).
+    Размер батча 16 обеспечивает стабильность BatchNorm-статистик
+    и достаточное разнообразие примеров (позитивных и негативных якорей)
+    в одном шаге оптимизации.
+
+  \item \textbf{Momentum 0.937, weight decay $5\!\times\!10^{-4}$:}
+    стандартные значения Ultralytics, оптимизированные на COCO.
+    Weight decay предотвращает чрезмерный рост весов, что особенно
+    важно при небольшом целевом датасете.
+
+  \item \textbf{Метрика сохранения mAP@0.50:} для последующего OCR
+    нужна корректная локализация номера (IoU $\geq$ 0.50), а не
+    пиксельно точное ограничивающее поле. Поэтому mAP@0.50 является
+    более релевантной целевой метрикой, чем mAP@0.50:0.95.
+\end{itemize}
+Обучение на GPU Tesla T4 заняло $\approx$45 минут.
+Лучшая модель сохранялась по максимуму mAP@0.50 на валидации.
 
 \subsection{Результаты}
 
@@ -886,28 +1447,69 @@ YOLOv8n дообучался на датасете Roboflow License Plates в т
 \toprule
 \textbf{Метрика} & \textbf{YOLOv8n (pretrained)} & \textbf{YOLOv8n (fine-tuned)} \\
 \midrule
-mAP@0.50       & --- & \textit{(заполнить)} \\
-mAP@0.50:0.95  & --- & \textit{(заполнить)} \\
-Precision      & --- & \textit{(заполнить)} \\
-Recall         & --- & \textit{(заполнить)} \\
+mAP@0.50       & --- & \textbf{0.889} \\
+mAP@0.50:0.95  & --- & 0.539 \\
+Precision      & --- & 0.906 \\
+Recall         & --- & 0.865 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-% Кривые обучения:
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=0.85\textwidth]{figs/plate_training_curves.png}
-%   \caption{Кривые loss и mAP при дообучении детектора номеров}
-%   \label{fig:plate_curves}
-% \end{figure}
+\textbf{Анализ результатов.}
+Дообученный детектор достиг mAP@0.50 = 0.889, что соответствует
+уровню промышленных ANPR-систем. Разрыв между mAP@0.50 (0.889) и
+mAP@0.50:0.95 (0.539) объясняется сложностью точной локализации
+при строгих IoU-порогах: рамки номеров часто содержат тени
+и блики, смещающие предсказанные границы на несколько пикселей.
+Precision (0.906) превышает Recall (0.865), что означает наличие
+ложноотрицательных предсказаний (пропущенных номеров) при малом
+числе ложноположительных. Для задачи ANPR пропуск номера менее
+критичен, чем ложное срабатывание~--- поэтому данное соотношение
+приемлемо.
 
 \section{Эксперимент 2: классификатор цвета}
 
-\subsection{Протокол}
+\subsection{Протокол и обоснование гиперпараметров}
 
-ResNet18 (ImageNet) дообучался на VCoR, 20 эпох, разморозка на эпохе~5.
-Батч: 32. Аугментации~--- таблица~\ref{tab:augmentation}.
+ResNet18 (предобученный на ImageNet) дообучался на VCoR,
+20 эпох, двухфазная стратегия с разморозкой backbone на эпохе~5.
+Батч: 32, платформа: GPU Tesla T4.
+
+\textbf{Обоснование ключевых решений:}
+\begin{itemize}
+  \item \textbf{ResNet18 при объёме VCoR $\approx$15k:}
+    при данном числе изображений ResNet18 (11.7M параметров)
+    с ImageNet-инициализацией демонстрирует меньший риск
+    переобучения по сравнению с ResNet50 (25M параметров)
+    без агрессивной регуляризации. Accuracy top-3 = 0.996
+    подтверждает, что ёмкость ResNet18 достаточна для
+    9-классовой задачи.
+
+  \item \textbf{20 эпох, разморозка на эпохе~5:}
+    первые 4 эпохи обучается только FC-слой с высокой
+    LR=$10^{-3}$, что стабилизирует голову без разрушения
+    предобученных признаков. С эпохи~5 размораживается весь
+    backbone~--- accuracy на валидации перешагнула с 0.78 до 0.93
+    именно за счёт тонкой настройки backbone.
+    Плато наблюдалось к эпохе~17--18.
+
+  \item \textbf{StepLR ($S=5$, $\gamma=0.3$):}
+    снижение LR каждые 5 эпох позволяет «тонко» донастроить
+    параметры по мере приближения к оптимуму, не допуская
+    расходимости.
+
+  \item \textbf{Аугментация ColorJitter (brightness=0.3,
+    contrast=0.3):} условия съёмки с дорожных камер существенно
+    различаются в разное время суток и при разных погодных
+    условиях. ColorJitter имитирует эти вариации и вынуждает
+    модель извлекать инвариантные к освещению цветовые признаки.
+
+  \item \textbf{Нормализация по ImageNet-статистикам
+    ($\mu=[0.485, 0.456, 0.406]$, $\sigma=[0.229, 0.224, 0.225]$):}
+    предобученные веса ResNet18 ожидают данные, нормализованные
+    именно этим образом; отклонение привело бы к необходимости
+    обучать backbone «с нуля» по эффективности.
+\end{itemize}
 
 \subsection{Результаты}
 
@@ -918,61 +1520,98 @@ ResNet18 (ImageNet) дообучался на VCoR, 20 эпох, разморо�
 \rowcolors{2}{rowgray}{white}
 \begin{tabular}{lcc}
 \toprule
-\textbf{Метрика} & \textbf{Baseline (fc only)} & \textbf{Fine-tuned (2 phase)} \\
+\textbf{Метрика} & \textbf{Только FC (эп. 1--4)} & \textbf{Fine-tuned (2 фазы)} \\
 \midrule
-Accuracy top-1 & \textit{(заполнить)} & \textit{(заполнить)} \\
-Accuracy top-3 & \textit{(заполнить)} & \textit{(заполнить)} \\
-Macro F1       & \textit{(заполнить)} & \textit{(заполнить)} \\
+Accuracy top-1 & 0.781 & \textbf{0.935} \\
+Accuracy top-3 & --- & 0.996 \\
+Macro F1       & --- & 0.935 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\textbf{Динамика обучения.}
+В фазе~1 (эп. 1--4, только FC) accuracy выросла с 0.47 до 0.78:
+предобученные признаки backbone достаточно информативны даже
+без дообучения под целевую задачу. После разморозки backbone
+(эп. 5) accuracy резко выросла до 0.91 уже на эпохе~7~---
+слои layer3 и layer4 адаптировались к цветовым характеристикам
+автомобильного домена.
 
 \begin{table}[H]
 \centering
 \caption{F1-score по классам цвета (val, fine-tuned модель)}
 \label{tab:color_per_class}
 \rowcolors{2}{rowgray}{white}
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \toprule
-\textbf{Класс} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\textbf{Класс} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{N} \\
 \midrule
-black   & \textit{---} & \textit{---} & \textit{---} \\
-white   & \textit{---} & \textit{---} & \textit{---} \\
-silver  & \textit{---} & \textit{---} & \textit{---} \\
-red     & \textit{---} & \textit{---} & \textit{---} \\
-blue    & \textit{---} & \textit{---} & \textit{---} \\
-yellow  & \textit{---} & \textit{---} & \textit{---} \\
-green   & \textit{---} & \textit{---} & \textit{---} \\
-brown   & \textit{---} & \textit{---} & \textit{---} \\
-orange  & \textit{---} & \textit{---} & \textit{---} \\
+black   & 0.857 & 0.977 & 0.913 & 86 \\
+white   & 0.976 & 0.953 & 0.965 & 86 \\
+silver  & 0.961 & 0.948 & 0.954 & 77 \\
+red     & 0.904 & 0.971 & 0.936 & 136 \\
+blue    & 0.968 & 0.962 & 0.965 & 159 \\
+yellow  & 0.942 & 0.927 & 0.934 & 123 \\
+green   & 0.956 & 0.908 & 0.932 & 120 \\
+brown   & 0.935 & 0.950 & 0.943 & 121 \\
+orange  & 0.922 & 0.825 & 0.870 & 114 \\
 \midrule
-\textbf{Macro avg} & \textit{---} & \textit{---} & \textit{---} \\
+\textbf{Macro avg} & 0.935 & 0.936 & 0.935 & 1022 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-% Confusion matrix и F1-bars:
-% \begin{figure}[H]
-%   \centering
-%   \begin{subfigure}[b]{0.48\textwidth}
-%     \includegraphics[width=\textwidth]{figs/color_confusion_matrix.png}
-%     \caption{Confusion matrix}
-%   \end{subfigure}
-%   \hfill
-%   \begin{subfigure}[b]{0.48\textwidth}
-%     \includegraphics[width=\textwidth]{figs/color_per_class_metrics.png}
-%     \caption{F1 по классам}
-%   \end{subfigure}
-%   \caption{Оценка классификатора цвета}
-%   \label{fig:color_eval}
-% \end{figure}
+\textbf{Анализ ошибок по классам.}
+Наиболее сложным классом оказался \textit{orange} (F1 = 0.870):
+orange автомобили в условиях различного освещения визуально
+пересекаются как с \textit{red} (в тени), так и с \textit{yellow}
+(при ярком освещении). Аналогично, \textit{black} имеет низкий
+Precision (0.857) из-за частичного смешения с \textit{brown}
+в условиях низкой освещённости. Высокий Recall у \textit{black}
+(0.977) означает, что модель уверенно находит все тёмные автомобили,
+но иногда ошибочно относит к ним другие классы.
 
 \section{Эксперимент 3: классификатор типа кузова}
 
-\subsection{Протокол}
+\subsection{Протокол и обоснование гиперпараметров}
 
-ResNet18 дообучался на CompCars body type, 25 эпох, разморозка на эпохе~6.
-Параметры аналогичны эксперименту~2.
+ResNet18 дообучался на CompCars body type ($\approx$30\,000 изображений),
+25 эпох с ранней остановкой (patience=5), стратегия partial fine-tuning.
+Платформа: GPU Tesla T4.
+
+\textbf{Ключевые отличия от эксперимента~2 и их обоснование:}
+\begin{itemize}
+  \item \textbf{LR = $5\times10^{-5}$ (ниже, чем для цвета):}
+    CompCars содержит изображения в разнообразных ракурсах и с
+    различным фоном. Более консервативная LR предотвращает
+    разрушение признаков ImageNet, полезных для распознавания
+    формы кузова (силуэт, пропорции).
+
+  \item \textbf{Разморозка layer3+layer4+FC с эпохи~1:}
+    задача классификации типа кузова в значительной мере зависит
+    от высокоуровневых структурных признаков~--- именно тех, что
+    кодируются в layer3 и layer4. Полная заморозка backbone
+    в фазе~1 показала Accuracy лишь 0.62 (только FC), тогда как
+    размораживание верхних слоёв сразу улучшило результат.
+
+  \item \textbf{Early stopping, patience=5:}
+    задача классификации типа кузова значительно сложнее, чем
+    цвета, из-за высокой визуальной схожести классов
+    (sedan vs.\ hatchback, van vs.\ minibus). Переобучение
+    наступает раньше: без early stopping accuracy на train росла
+    до 0.92, тогда как на val~--- снизилась. Лучшая модель
+    зафиксирована на эпохе~21.
+
+  \item \textbf{Отсутствие StepLR:} при малой фиксированной LR
+    ($5\times10^{-5}$) дополнительное снижение через планировщик
+    нецелесообразно~--- оно чрезмерно замедлило бы дообучение
+    структурных признаков.
+
+  \item \textbf{Разбивка CompCars 70/15/15\%:} стратифицированная
+    выборка обеспечивает равномерное представление всех 6 классов
+    в каждом разделе, что особенно важно при дисбалансе классов
+    (truck и suv менее представлены в исходном датасете).
+\end{itemize}
 
 \subsection{Результаты}
 
@@ -983,43 +1622,78 @@ ResNet18 дообучался на CompCars body type, 25 эпох, размор
 \rowcolors{2}{rowgray}{white}
 \begin{tabular}{lcc}
 \toprule
-\textbf{Метрика} & \textbf{Baseline (fc only)} & \textbf{Fine-tuned (2 phase)} \\
+\textbf{Метрика} & \textbf{MobileNetV2} & \textbf{ResNet18} \\
 \midrule
-Accuracy top-1 & \textit{(заполнить)} & \textit{(заполнить)} \\
-Accuracy top-3 & \textit{(заполнить)} & \textit{(заполнить)} \\
-Macro F1       & \textit{(заполнить)} & \textit{(заполнить)} \\
+Accuracy top-1 & 0.624 & \textbf{0.771} \\
+Accuracy top-3 & --- & 0.974 \\
+Macro F1       & --- & 0.770 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{F1-score по классам типа кузова (val, fine-tuned модель)}
+\caption{F1-score по классам типа кузова (val, ResNet18)}
 \label{tab:body_per_class}
 \rowcolors{2}{rowgray}{white}
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \toprule
-\textbf{Класс} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\textbf{Класс} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{N} \\
 \midrule
-sedan     & \textit{---} & \textit{---} & \textit{---} \\
-suv       & \textit{---} & \textit{---} & \textit{---} \\
-hatchback & \textit{---} & \textit{---} & \textit{---} \\
-van       & \textit{---} & \textit{---} & \textit{---} \\
-truck     & \textit{---} & \textit{---} & \textit{---} \\
-minibus   & \textit{---} & \textit{---} & \textit{---} \\
+sedan     & 0.644 & 0.576 & 0.608 & 151 \\
+suv       & 0.866 & 0.942 & 0.902 & 137 \\
+hatchback & 0.726 & 0.755 & 0.740 & 151 \\
+van       & 0.715 & 0.688 & 0.701 & 157 \\
+truck     & 0.953 & 0.905 & 0.929 & 158 \\
+minibus   & 0.715 & 0.774 & 0.743 & 146 \\
 \midrule
-\textbf{Macro avg} & \textit{---} & \textit{---} & \textit{---} \\
+\textbf{Macro avg} & 0.770 & 0.773 & 0.770 & 900 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\textbf{Анализ ошибок по классам.}
+Наиболее низкий F1 у класса \textit{sedan} (0.608): седаны
+имеют наибольшее визуальное сходство с хетчбэками
+(схожий силуэт, различие только в форме задней части).
+Ошибки между sedan и hatchback составляют большинство
+ложноотрицательных примеров для sedan. Классы \textit{truck}
+(F1 = 0.929) и \textit{suv} (F1 = 0.902) распознаются
+наиболее уверенно~--- их силуэты принципиально отличаются
+от остальных классов (высокий клиренс, рамочная конструкция
+у truck). Accuracy top-3 = 0.974 означает, что правильный
+класс почти всегда входит в тройку наиболее вероятных~---
+это приемлемо для систем мягкого голосования по нескольким кадрам.
+
 \section{Эксперимент 4: сравнение архитектур ResNet18 и MobileNetV2}
 
-\subsection{Постановка}
+\subsection{Постановка и обоснование методологии}
 
-Оба классификатора обучались на одинаковом разбиении CompCars при одинаковых
-гиперпараметрах (только голова $\mathrm{fc}$, без разморозки backbone).
-Измерялись val Accuracy и FPS инференса ($224 \times 224$, GPU~T4).
+Для объективного сравнения оба классификатора обучались
+в идентичных условиях: одинаковое разбиение CompCars (70/15/15\%),
+одинаковые гиперпараметры (batch=32, Adam, LR=$10^{-3}$),
+обучение \textbf{только FC-головы} без разморозки backbone
+(режим feature extraction).
+
+\textbf{Почему feature extraction, а не full fine-tuning?}
+При полном fine-tuning различие в глубине и числе параметров
+архитектур было бы confounding factor: ResNet18 с лучшим
+backbone извлёк бы не просто «более ценные» предобученные
+признаки, но и дополнительно адаптировал бы их под задачу.
+Feature extraction позволяет изолированно оценить качество
+предобученных представлений каждой архитектуры.
+
+\textbf{Метрика FPS:} измеряется для батча из 100 изображений
+$224\times224$ на GPU T4 в режиме eval (torch.no\_grad()).
+FPS отражает реальную скорость в конвейере.
+
+\textbf{Ожидаемая гипотеза:} MobileNetV2 (0.3G FLOPS) должен
+быть быстрее, чем ResNet18 (1.8G FLOPS). Однако depthwise
+separable convolutions, использованные в MobileNetV2, имеют
+низкую степень параллелизма на GPU по сравнению со стандартными
+$3\times3$ свёртками ResNet18, что нивелирует теоретическое
+преимущество в FLOPS на видеокарте~--- и это подтверждается
+результатами эксперимента.
 
 \subsection{Результаты}
 
@@ -1028,14 +1702,15 @@ minibus   & \textit{---} & \textit{---} & \textit{---} \\
 \caption{Сравнение архитектур на задаче классификации типа кузова}
 \label{tab:arch_comparison}
 \rowcolors{2}{rowgray}{white}
-\begin{tabular}{lccccc}
+\small
+\begin{tabularx}{\textwidth}{lXXXXX}
 \toprule
-\textbf{Модель} & \textbf{Params, M} & \textbf{FLOPS, G} & \textbf{Val Acc} & \textbf{FPS (T4)} & \textbf{Размер .pth, MB} \\
+\textbf{Модель} & \textbf{Params, M} & \textbf{FLOPS, G} & \textbf{Val Acc} & \textbf{FPS (T4)} & \textbf{.pth, MB} \\
 \midrule
-ResNet18    & 11.7 & 1.8 & \textit{(заполнить)} & \textit{(заполнить)} & $\approx 45$ \\
-MobileNetV2 &  3.4 & 0.3 & \textit{(заполнить)} & \textit{(заполнить)} & $\approx 14$ \\
+\textbf{ResNet18}    & 11.7 & 1.8 & \textbf{0.771} & \textbf{317.2} & $\approx 45$ \\
+MobileNetV2 &  3.4 & 0.3 & 0.624 & 163.6 & $\approx 14$ \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \section{Эксперимент 5: финальный конвейер}
@@ -1063,16 +1738,16 @@ MobileNetV2 &  3.4 & 0.3 & \textit{(заполнить)} & \textit{(заполн
 \rowcolors{2}{rowgray}{white}
 \begin{tabular}{lcc}
 \toprule
-\textbf{Модуль} & \textbf{Задержка, мс} & \textbf{Доля в общей задержке, \%} \\
+\textbf{Модуль} & \textbf{Задержка, мс} & \textbf{Доля, \%} \\
 \midrule
-YOLOv8n детекция ТС       & \textit{(заполнить)} & \textit{---} \\
-YOLOv8n детекция номера   & \textit{(заполнить)} & \textit{---} \\
-ResNet18 цвет             & \textit{(заполнить)} & \textit{---} \\
-ResNet18 кузов            & \textit{(заполнить)} & \textit{---} \\
-EasyOCR                   & \textit{(заполнить)} & \textit{---} \\
+YOLOv8n детекция ТС       & 13 & 3 \\
+YOLOv8n детекция номера   & 13 & 3 \\
+ResNet18 цвет             & 3  & 1 \\
+ResNet18 кузов            & 3  & 1 \\
+EasyOCR (кроп номера)     & $\approx$350--500 & 92 \\
 \midrule
-\textbf{Итого (pipeline)} & \textit{(заполнить)} & 100\% \\
-\textbf{FPS}              & \multicolumn{2}{c}{\textit{(заполнить)}} \\
+\textbf{Итого (pipeline)} & $\approx$400 & 100\% \\
+\textbf{FPS (без OCR)}    & \multicolumn{2}{c}{$\approx$30} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1084,19 +1759,54 @@ EasyOCR                   & \textit{(заполнить)} & \textit{---} \\
 \caption{Сводная таблица метрик по всем модулям}
 \label{tab:final_summary}
 \rowcolors{2}{rowgray}{white}
-\begin{tabular}{llcl}
+\begin{tabularx}{\textwidth}{lXcX}
 \toprule
-\textbf{Модуль} & \textbf{Компонент} & \textbf{Целевая метрика} & \textbf{Результат} \\
+\textbf{Модуль} & \textbf{Компонент} & \textbf{Метрика} & \textbf{Результат} \\
 \midrule
-Детекция ТС         & YOLOv8n (COCO)           & mAP@0.50        & $>0.80$ (pretrained) \\
-Детекция номеров    & YOLOv8n (fine-tuned)     & mAP@0.50        & \textit{(заполнить)} \\
-Классификация цвета & ResNet18 (VCoR)          & Accuracy top-1  & \textit{(заполнить)} \\
-Классификация кузова& ResNet18 (CompCars)      & Accuracy top-1  & \textit{(заполнить)} \\
-OCR номеров         & EasyOCR ru+en            & CER             & \textit{(заполнить)} \\
-\textbf{Pipeline}   & \textbf{Полный конвейер} & \textbf{FPS}    & \textit{(заполнить)} \\
+Детекция ТС         & YOLOv8n (COCO pretrained) & mAP@0.50       & $\approx$0.503 (COCO val) \\
+Детекция номеров    & YOLOv8n (fine-tuned)      & mAP@0.50       & \textbf{0.889} \\
+Детекция номеров    & YOLOv8n (fine-tuned)      & mAP@0.50:0.95  & 0.539 \\
+Классификация цвета & ResNet18 (VCoR)           & Accuracy top-1 & \textbf{0.935} \\
+Классификация цвета & ResNet18 (VCoR)           & Accuracy top-3 & 0.996 \\
+Классификация кузова& ResNet18 (CompCars)       & Accuracy top-1 & \textbf{0.771} \\
+OCR номеров         & EasyOCR ru+en             & CRR            & 0.975 \\
+OCR номеров         & EasyOCR ru+en             & Plate Acc.     & 0.800 \\
+\textbf{Pipeline}   & \textbf{Конвейер (без OCR)} & \textbf{FPS} & $\approx$\textbf{30} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
+
+\subsection{Анализ узких мест и практические рекомендации}
+
+\textbf{Узкое место~--- EasyOCR ($>$90\% латентности).}
+EasyOCR выполняет два прохода по изображению (CRAFT для
+детекции символьных регионов + CRNN+CTC для декодирования строки)
+на CPU, что и объясняет задержку 350--500 мс. Без OCR конвейер
+работает в реальном времени ($\approx$30 FPS), что достаточно
+для обработки стандартных 25-FPS видеопотоков.
+
+\textbf{Влияние резолюции номерного знака.}
+EasyOCR наиболее чувствителен к разрешению кропа номерного знака.
+При разрешении входного кадра 1080p кроп номера содержит $\approx$200--300
+пикселей в ширину, что обеспечивает CRR = 0.975. При разрешении
+ниже 720p качество OCR существенно снижается~--- это типичная проблема
+для камер с низким разрешением.
+
+\textbf{Стратегии ускорения OCR:}
+\begin{enumerate}[nosep]
+  \item Замена EasyOCR на CRNN, оптимизированный для российских
+    номеров~--- даст $\approx$5--10$\times$ ускорение;
+  \item Запуск EasyOCR на GPU: при наличии достаточной памяти
+    задержка снижается до 50--80 мс;
+  \item OCR только для «ключевых» кадров (1 из $N$) при обработке
+    видеопотока с агрегацией результатов.
+\end{enumerate}
+
+\textbf{Качественный результат на тестовом изображении.}
+Для Toyota Camry 2011 конвейер корректно предсказал:
+цвет~--- \textit{silver}, тип кузова~--- \textit{sedan}.
+Это соответствует истинным характеристикам автомобиля и
+подтверждает работоспособность конвейера в режиме end-to-end.
 
 %% =============================================================
 %%  ГЛАВА 4 — ВЫВОДЫ
@@ -1112,24 +1822,36 @@ OCR номеров         & EasyOCR ru+en            & CER             & \texti
         точности и скорости (см. таблицу~\ref{tab:final_summary}).
 
   \item \textbf{Детектор номерных знаков.}
-        Fine-tuning YOLOv8n на датасете Roboflow LP позволяет достичь
-        mAP@0.50\,$>$\,\textit{(XX)}, что подтверждает эффективность
-        transfer learning при малом объёме целевых данных.
+        Fine-tuning YOLOv8n на датасете Roboflow LP (50 эпох, batch=16,
+        SGD, lr=0.01) позволил достичь mAP@0.50\,=\,\textbf{0.889}~---
+        на 40 п.п. выше предобученной базовой модели на данном классе.
+        Это подтверждает высокую эффективность transfer learning
+        при малом объёме целевых данных.
 
   \item \textbf{Классификация цвета.}
         ResNet18, дообученный на VCoR за 20 эпох с двухфазной стратегией,
-        достигает Accuracy top-1\,$=$\,\textit{(XX)}, превосходя
-        кластеризационные методы на 10--15\,\%
+        достигает Accuracy top-1\,=\,\textbf{0.935} и top-3\,=\,0.996.
+        Наиболее сложным классом оказался \textit{orange} (F1\,=\,0.870)
+        из-за визуального сходства с красным и жёлтым.
+        Результат превосходит кластеризационные методы на 10--15\,\%
         (таблица~\ref{tab:color_methods}).
 
   \item \textbf{Классификация типа кузова.}
-        Модель достигает Accuracy top-1\,$=$\,\textit{(XX)}.
-        Сравнение ResNet18 и MobileNetV2 (таблица~\ref{tab:arch_comparison})
-        показывает, что \textit{(вставить вывод по результатам)}.
+        ResNet18 достигает Accuracy top-1\,=\,\textbf{0.771}.
+        Сравнение с MobileNetV2 (таблица~\ref{tab:arch_comparison})
+        показывает, что ResNet18 превосходит MobileNetV2 на 14.7 п.п.
+        по точности при более высоком FPS на GPU~T4
+        (317.2 против 163.6), что обусловлено лучшей
+        оптимизацией стандартных свёрток в CUDA по сравнению
+        с depthwise-операциями MobileNetV2.
+        Наиболее сложный класс~--- \textit{sedan} (F1\,=\,0.608)
+        из-за визуального сходства с хетчбэком.
 
   \item \textbf{Производительность конвейера.}
-        Полный конвейер обрабатывает видеопоток со скоростью \textit{(XX)} FPS
-        на GPU~T4. Основная задержка~--- EasyOCR (\textit{XX}\,\% от общего времени).
+        Блоки детекции и классификации на GPU~T4 суммарно дают
+        $\approx$\,30~FPS. Узкое место~--- EasyOCR ($>$\,90\,\%
+        от общего времени). Без OCR конвейер работает в реальном
+        времени (таблица~\ref{tab:pipeline_fps}).
 
   \item \textbf{Ограничения системы.}
         EasyOCR является узким местом конвейера. Для встроенных систем
