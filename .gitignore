@@ -18,5 +18,8 @@ diploma_*/
 .DS_Store
 EOF
 
-#test videos
+#test videos 
 test.mp4
+
+#presentation
+diploma_present.pptx

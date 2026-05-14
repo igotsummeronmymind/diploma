@@ -49,6 +49,10 @@
 \usepackage{microtype}
 \setlength{\emergencystretch}{1.5em}
 
+%% ── Переименование подписей ──────────────────────────────
+\addto\captionsenglish{\renewcommand{\figurename}{Рис.}}
+\addto\captionsrussian{\renewcommand{\figurename}{Рис.}}
+
 %% ── Стиль заголовков глав ─────────────────────────────────
 \usepackage{titlesec}
 \titleformat{\chapter}[block]
@@ -414,8 +418,9 @@ SVM + цветовые гистограммы & Гистограммы + SVM    
 
   \draw[arr] (crop.east) -- ++(0.6,0) |- (color.west);
   \draw[arr] (crop.east) -- ++(0.6,0) |- (body.west);
-  \draw[arr] (color.south) |- (out.east);
-  \draw[arr] (body.east)  -- ++(0.3,0) |- (out.east);
+  %% color → out: идём вниз, затем влево (в зазор между колонками), затем вниз к out
+  \draw[arr] (color.south) -- ++(0,-0.28) -- ++(-2.5,0) |- (out.east);
+  \draw[arr] (body.east)   -- ++(0.3,0) |- (out.east);
 
   %% ── подпись классов ─────────────────────────────────────
   \node[gry, right=2.5cm of color, text width=2.8cm, font=\scriptsize]
@@ -572,7 +577,7 @@ YOLOv8 состоит из трёх функциональных блоков, �
         {Детекции\\$(x,y,w,h,p,c)$};
 
   \draw[arr] (inp)  -- (bb);
-  \draw[arr] (bb)   -- node[above,font=\scriptsize]{P3/P4/P5} (neck);
+  \draw[arr] (bb)   -- node[above=24pt,font=\scriptsize]{P3/P4/P5} (neck);
   \draw[arr] (neck) -- (head);
   \draw[arr] (head) -- (out);
 
@@ -800,10 +805,6 @@ $\lambda_{\mathrm{cls}}=0.5$, $\lambda_{\mathrm{dfl}}=1.5$
   \draw[arr] (frz)  -- (head);
   \draw[arr] (head) -- (res);
 
-  \node[below=0.7cm of frz, font=\scriptsize, text width=3.8cm, align=center]
-       {Roboflow License Plates\\$\approx$6000 изображений};
-  \draw[darr] ([yshift=-0.5cm]frz.south) -- (head.south |- {[yshift=-0.5cm]frz.south});
-
 \end{tikzpicture}%
 }
 \caption{Схема transfer learning для детектора номерных знаков}
@@ -851,7 +852,7 @@ EasyOCR использует двухэтапный конвейер, предс
 
   \draw[arr] (plate) -- (gray);
   \draw[arr] (gray)  -- (craft);
-  \draw[arr] (craft) -- node[above,font=\scriptsize]{регионы} (crnn);
+  \draw[arr] (craft) -- (crnn);
   \draw[arr] (crnn)  -- (regex);
 \end{tikzpicture}%
 }
