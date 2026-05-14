@@ -17,3 +17,6 @@ diploma_*/
 # macOS
 .DS_Store
 EOF
+
+#test videos
+test.mp4
