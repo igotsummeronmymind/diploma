@@ -830,7 +830,7 @@ $\lambda_{\mathrm{cls}}=0.5$, $\lambda_{\mathrm{dfl}}=1.5$
 Momentum             & 0.937 \\
 Weight decay         & $5 \times 10^{-4}$ \\
 Число классов        & 1 (\textit{license\_plate}) \\
-Метрика сохранения   & mAP@0.50 на валидации \\
+Метрика сохранения   & mAP@0.50 на тестовой выборке \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1246,49 +1246,44 @@ $\theta \sim \mathcal{N}(0, 1/\lambda)$.
 
 \begin{figure}[H]
 \centering
-\resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[node distance=0.5cm and 0.9cm]
+  \node[blk, text width=3cm] (mi)  {Вход $h \times w \times c$};
+  \node[blk, text width=3cm, below=of mi] (exp) {Conv $1\times1$\\(расширение $\times t$)};
+  \node[blk, text width=3cm, below=of exp](dw)  {DWConv $3\times3$\\(depthwise)};
+  \node[blk, text width=3cm, below=of dw] (proj){Conv $1\times1$\\(проекция)};
+  \node[grn, text width=3cm, below=of proj](mo) {Выход $h \times w \times c'$};
 
-  %% Inverted Residual Block
-  \begin{scope}
-    \node[blk, text width=3cm] (mi)  {Вход $h \times w \times c$};
-    \node[blk, text width=3cm, below=of mi] (exp) {Conv $1\times1$\\(расширение $\times t$)};
-    \node[blk, text width=3cm, below=of exp](dw)  {DWConv $3\times3$\\(depthwise)};
-    \node[blk, text width=3cm, below=of dw] (proj){Conv $1\times1$\\(проекция)};
-    \node[grn, text width=3cm, below=of proj](mo) {Выход $h \times w \times c'$};
+  \draw[arr] (mi)  -- (exp);
+  \draw[arr] (exp) -- (dw);
+  \draw[arr] (dw)  -- (proj);
+  \draw[arr] (proj)-- (mo);
 
-    \draw[arr] (mi)  -- (exp);
-    \draw[arr] (exp) -- (dw);
-    \draw[arr] (dw)  -- (proj);
-    \draw[arr] (proj)-- (mo);
-
-    \draw[arr, orangenode, rounded corners=6pt]
-        (mi.east) -- ++(0.9,0) -- ++(0,-3.7) -- (mo.east);
-    \node[right=1.05cm of dw, font=\scriptsize, text=orangenode]{skip (если $c=c'$)};
-  \end{scope}
-
-  %% Сравнение параметров
-  \begin{scope}[xshift=6.5cm]
-    \node[font=\small\bfseries] at (1.7, 0) {ResNet18 vs MobileNetV2};
-    \node[gry, text width=4.8cm, below=0.3cm of {(1.7,0)}] (tbl)
-    {
-    \begin{tabular}{lcc}
-    \small Характеристика & \small R18 & \small MV2 \\
-    \hline
-    \small Params, M       & \small 11.7 & \small 3.4 \\
-    \small Blocks          & \small Residual & \small Inv.Res. \\
-    \small Conv type       & \small Standard & \small Depthwise \\
-    \small FLOPS (224)     & \small 1.8G & \small 0.3G \\
-    \end{tabular}
-    };
-  \end{scope}
+  \draw[arr, orangenode, rounded corners=6pt]
+      (mi.east) -- ++(0.9,0) -- ++(0,-3.7) -- (mo.east);
+  \node[right=1.05cm of dw, font=\scriptsize, text=orangenode]{skip (если $c=c'$)};
 
   \node[above=0.1cm of mi, font=\small\bfseries] {Inverted Residual Block};
-\end{tikzpicture}%
-}
-\caption{Инвертированный residual-блок MobileNetV2 и сравнение с ResNet18}
+\end{tikzpicture}
+\caption{Инвертированный residual-блок MobileNetV2}
 \label{fig:mobilenet}
 \end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Сравнение ResNet18 и MobileNetV2}
+\label{tab:r18_mv2}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Характеристика} & \textbf{ResNet18} & \textbf{MobileNetV2} \\
+\midrule
+Params, M   & 11.7     & 3.4 \\
+Blocks      & Residual & Inv.\ Residual \\
+Conv type   & Standard & Depthwise sep. \\
+FLOPS (224) & 1.8G     & 0.3G \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Датасеты}
 
@@ -1407,7 +1402,7 @@ YOLOv8n дообучался на датасете Roboflow License Plates в т
     наибольшую скорость инференса, что критично для встраивания в конвейер.
 
   \item \textbf{50 эпох:} при объёме датасета $\approx$6000 изображений
-    достаточно для стабильной сходимости. Динамика val mAP@0.50 показала
+    достаточно для стабильной сходимости. Динамика mAP@0.50 на тестовой выборке показала
     plateau в районе эпохи~40; дополнительные 10 эпох дали прирост
     $\approx$0.005 mAP за счёт cosine annealing с малым LR.
 
@@ -1432,13 +1427,13 @@ YOLOv8n дообучался на датасете Roboflow License Plates в т
     более релевантной целевой метрикой, чем mAP@0.50:0.95.
 \end{itemize}
 Обучение на GPU Tesla T4 заняло $\approx$45 минут.
-Лучшая модель сохранялась по максимуму mAP@0.50 на валидации.
+Лучшая модель сохранялась по максимуму mAP@0.50 на тестовой выборке.
 
 \subsection{Результаты}
 
 \begin{table}[H]
 \centering
-\caption{Метрики детектора номерных знаков (val)}
+\caption{Метрики детектора номерных знаков (тест, 86~изображений)}
 \label{tab:plate_det}
 \rowcolors{2}{rowgray}{white}
 \begin{tabular}{lcc}
