@@ -159,10 +159,10 @@ YOLOv8n~--- для детекции ТС и номерных знаков, ResNe
 распознавания символов кириллицы.
 
 Обучение и тестирование проводились на открытых датасетах (VCoR, CompCars,
-Roboflow License Plates). Детектор номерных знаков YOLOv8n достиг
+Kaggle car-plate-detection). Детектор номерных знаков YOLOv8n достиг
 mAP@0.50\,=\,0.889. Классификатор цвета ResNet18 достиг Accuracy
 top-1\,=\,0.935. Классификатор типа кузова ResNet18~--- Accuracy
-top-1\,=\,0.771. EasyOCR обеспечивает CRR\,=\,0.975 на синтетических
+top-1\,=\,0.784. EasyOCR обеспечивает CRR\,=\,0.975 на синтетических
 номерах. Проведено сравнительное исследование ResNet18 и MobileNetV2.
 Результатом является работоспособный прототип системы видеоаналитики транспорта.
 
@@ -944,7 +944,7 @@ $N$~--- длина эталонной строки.
   \node[blk, text width=4cm, right=1.2cm of sw] (p2)
         {\textbf{Фаза 2}\\Весь backbone обучается\\$\eta_2 = \eta_1/10$};
   \node[grn, text width=3cm, right=1.2cm of p2] (save)
-        {Best model\\(max val acc)};
+        {Best model\\(max test acc)};
 
   \draw[arr] (p1) -- node[above,font=\scriptsize]{эп. 1–N} (sw);
   \draw[arr] (sw) -- node[above,font=\scriptsize]{эп. N+1–end} (p2);
@@ -1204,7 +1204,7 @@ $\theta \sim \mathcal{N}(0, 1/\lambda)$.
 
 Если контрольная метрика не улучшается в течение
 \textit{patience} эпох, обучение прекращается, а лучшая
-(по валидационной метрике) модель сохраняется:
+(по тестовой метрике) модель сохраняется:
 \begin{equation}
   \mathrm{stop~if}\quad
   e - e_{\mathrm{best}} > \mathrm{patience},
@@ -1297,7 +1297,7 @@ FLOPS (224) & 1.8G     & 0.3G \\
 \textbf{Датасет} & \textbf{Задача} & \textbf{Источник} & \textbf{Изобр.} & \textbf{Классов} & \textbf{Формат} \\
 \midrule
 COCO 2017          & Детекция ТС        & COCO/Ultralytics & 118k & 80 (4 для ТС) & YOLO \\
-Roboflow LP        & Детекция номеров   & Roboflow         & $\approx$6k  & 1 & YOLO \\
+car-plate-detection & Детекция номеров   & Kaggle (andrewmvd) & 433 & 1 & Pascal VOC \\
 VCoR               & Цвет авто          & Kaggle           & $\approx$15k & 9 & ImageFolder \\
 CompCars body-type & Тип кузова         & CUHK             & $\approx$30k & 6 & ImageFolder \\
 \bottomrule
@@ -1390,7 +1390,7 @@ torchvision       & 0.17 \\
 
 \subsection{Протокол и обоснование гиперпараметров}
 
-YOLOv8n дообучался на датасете Roboflow License Plates в течение 50 эпох
+YOLOv8n дообучался на датасете car-plate-detection (Kaggle, andrewmvd, 433 изображения) в течение 50 эпох
 (параметры~--- таблица~\ref{tab:plate_hp}).
 
 \textbf{Обоснование ключевых решений:}
@@ -1401,7 +1401,7 @@ YOLOv8n дообучался на датасете Roboflow License Plates в т
     достаточно лёгкой архитектуры. Кроме того, yolov8n обеспечивает
     наибольшую скорость инференса, что критично для встраивания в конвейер.
 
-  \item \textbf{50 эпох:} при объёме датасета $\approx$6000 изображений
+  \item \textbf{50 эпох:} при объёме датасета 433 изображений
     достаточно для стабильной сходимости. Динамика mAP@0.50 на тестовой выборке показала
     plateau в районе эпохи~40; дополнительные 10 эпох дали прирост
     $\approx$0.005 mAP за счёт cosine annealing с малым LR.
@@ -1482,7 +1482,7 @@ ResNet18 (предобученный на ImageNet) дообучался на VC
     первые 4 эпохи обучается только FC-слой с высокой
     LR=$10^{-3}$, что стабилизирует голову без разрушения
     предобученных признаков. С эпохи~5 размораживается весь
-    backbone~--- accuracy на валидации перешагнула с 0.78 до 0.93
+    backbone~--- accuracy на тестовой выборке перешагнула с 0.78 до 0.93
     именно за счёт тонкой настройки backbone.
     Плато наблюдалось к эпохе~17--18.
 
@@ -1508,7 +1508,7 @@ ResNet18 (предобученный на ImageNet) дообучался на VC
 
 \begin{table}[H]
 \centering
-\caption{Метрики классификатора цвета (val)}
+\caption{Метрики классификатора цвета (test)}
 \label{tab:color_metrics}
 \rowcolors{2}{rowgray}{white}
 \begin{tabular}{lcc}
@@ -1532,7 +1532,7 @@ Macro F1       & --- & 0.935 \\
 
 \begin{table}[H]
 \centering
-\caption{F1-score по классам цвета (val, fine-tuned модель)}
+\caption{F1-score по классам цвета (test, fine-tuned модель)}
 \label{tab:color_per_class}
 \rowcolors{2}{rowgray}{white}
 \begin{tabular}{lcccc}
@@ -1592,7 +1592,7 @@ ResNet18 дообучался на CompCars body type ($\approx$30\,000 изоб
     цвета, из-за высокой визуальной схожести классов
     (sedan vs.\ hatchback, van vs.\ minibus). Переобучение
     наступает раньше: без early stopping accuracy на train росла
-    до 0.92, тогда как на val~--- снизилась. Лучшая модель
+    до 0.92, тогда как на test~--- снизилась. Лучшая модель
     зафиксирована на эпохе~21.
 
   \item \textbf{Отсутствие StepLR:} при малой фиксированной LR
@@ -1600,9 +1600,8 @@ ResNet18 дообучался на CompCars body type ($\approx$30\,000 изоб
     нецелесообразно~--- оно чрезмерно замедлило бы дообучение
     структурных признаков.
 
-  \item \textbf{Разбивка CompCars 70/15/15\%:} стратифицированная
-    выборка обеспечивает равномерное представление всех 6 классов
-    в каждом разделе, что особенно важно при дисбалансе классов
+  \item \textbf{Разбивка CompCars 85/15\% (train/test):} случайное перемешивание (seed=42) обеспечивает равномерное представление всех 6 классов
+    в обоих разделах, что особенно важно при дисбалансе классов
     (truck и suv менее представлены в исходном датасете).
 \end{itemize}
 
@@ -1610,51 +1609,51 @@ ResNet18 дообучался на CompCars body type ($\approx$30\,000 изоб
 
 \begin{table}[H]
 \centering
-\caption{Метрики классификатора типа кузова (val)}
+\caption{Метрики классификатора типа кузова (test)}
 \label{tab:body_metrics}
 \rowcolors{2}{rowgray}{white}
 \begin{tabular}{lcc}
 \toprule
 \textbf{Метрика} & \textbf{MobileNetV2} & \textbf{ResNet18} \\
 \midrule
-Accuracy top-1 & 0.624 & \textbf{0.771} \\
-Accuracy top-3 & --- & 0.974 \\
-Macro F1       & --- & 0.770 \\
+Accuracy top-1 & 0.620 & \textbf{0.784} \\
+Accuracy top-3 & --- & 0.961 \\
+Macro F1       & --- & 0.782 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{F1-score по классам типа кузова (val, ResNet18)}
+\caption{F1-score по классам типа кузова (test, ResNet18)}
 \label{tab:body_per_class}
 \rowcolors{2}{rowgray}{white}
 \begin{tabular}{lcccc}
 \toprule
 \textbf{Класс} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{N} \\
 \midrule
-sedan     & 0.644 & 0.576 & 0.608 & 151 \\
-suv       & 0.866 & 0.942 & 0.902 & 137 \\
-hatchback & 0.726 & 0.755 & 0.740 & 151 \\
-van       & 0.715 & 0.688 & 0.701 & 157 \\
-truck     & 0.953 & 0.905 & 0.929 & 158 \\
-minibus   & 0.715 & 0.774 & 0.743 & 146 \\
+sedan     & 0.728 & 0.550 & 0.626 & 151 \\
+suv       & 0.905 & 0.971 & 0.937 & 137 \\
+hatchback & 0.679 & 0.742 & 0.709 & 151 \\
+van       & 0.714 & 0.732 & 0.723 & 157 \\
+truck     & 0.899 & 0.962 & 0.930 & 158 \\
+minibus   & 0.771 & 0.760 & 0.766 & 146 \\
 \midrule
-\textbf{Macro avg} & 0.770 & 0.773 & 0.770 & 900 \\
+\textbf{Macro avg} & 0.783 & 0.786 & 0.782 & 900 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \textbf{Анализ ошибок по классам.}
-Наиболее низкий F1 у класса \textit{sedan} (0.608): седаны
+Наиболее низкий F1 у класса \textit{sedan} (0.626): седаны
 имеют наибольшее визуальное сходство с хетчбэками
 (схожий силуэт, различие только в форме задней части).
 Ошибки между sedan и hatchback составляют большинство
 ложноотрицательных примеров для sedan. Классы \textit{truck}
-(F1 = 0.929) и \textit{suv} (F1 = 0.902) распознаются
+(F1 = 0.930) и \textit{suv} (F1 = 0.937) распознаются
 наиболее уверенно~--- их силуэты принципиально отличаются
 от остальных классов (высокий клиренс, рамочная конструкция
-у truck). Accuracy top-3 = 0.974 означает, что правильный
+у truck). Accuracy top-3 = 0.961 означает, что правильный
 класс почти всегда входит в тройку наиболее вероятных~---
 это приемлемо для систем мягкого голосования по нескольким кадрам.
 
@@ -1663,7 +1662,7 @@ minibus   & 0.715 & 0.774 & 0.743 & 146 \\
 \subsection{Постановка и обоснование методологии}
 
 Для объективного сравнения оба классификатора обучались
-в идентичных условиях: одинаковое разбиение CompCars (70/15/15\%),
+в идентичных условиях: одинаковое разбиение CompCars (85/15\%, train/test),
 одинаковые гиперпараметры (batch=32, Adam, LR=$10^{-3}$),
 обучение \textbf{только FC-головы} без разморозки backbone
 (режим feature extraction).
@@ -1698,10 +1697,10 @@ $3\times3$ свёртками ResNet18, что нивелирует теорет
 \small
 \begin{tabularx}{\textwidth}{lXXXXX}
 \toprule
-\textbf{Модель} & \textbf{Params, M} & \textbf{FLOPS, G} & \textbf{Val Acc} & \textbf{FPS (T4)} & \textbf{.pth, MB} \\
+\textbf{Модель} & \textbf{Params, M} & \textbf{FLOPS, G} & \textbf{Test Acc} & \textbf{FPS (T4)} & \textbf{.pth, MB} \\
 \midrule
-\textbf{ResNet18}    & 11.7 & 1.8 & \textbf{0.771} & \textbf{317.2} & $\approx 45$ \\
-MobileNetV2 &  3.4 & 0.3 & 0.624 & 163.6 & $\approx 14$ \\
+\textbf{ResNet18}    & 11.7 & 1.8 & \textbf{0.784} & \textbf{279.1} & $\approx 45$ \\
+MobileNetV2 &  3.4 & 0.3 & 0.620 & 127.9 & $\approx 14$ \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1761,7 +1760,7 @@ EasyOCR (кроп номера)     & $\approx$350--500 & 92 \\
 Детекция номеров    & YOLOv8n (fine-tuned)      & mAP@0.50:0.95  & 0.539 \\
 Классификация цвета & ResNet18 (VCoR)           & Accuracy top-1 & \textbf{0.935} \\
 Классификация цвета & ResNet18 (VCoR)           & Accuracy top-3 & 0.996 \\
-Классификация кузова& ResNet18 (CompCars)       & Accuracy top-1 & \textbf{0.771} \\
+Классификация кузова& ResNet18 (CompCars)       & Accuracy top-1 & \textbf{0.784} \\
 OCR номеров         & EasyOCR ru+en             & CRR            & 0.975 \\
 OCR номеров         & EasyOCR ru+en             & Plate Acc.     & 0.800 \\
 \textbf{Pipeline}   & \textbf{Конвейер (без OCR)} & \textbf{FPS} & $\approx$\textbf{30} \\
@@ -1815,7 +1814,7 @@ EasyOCR наиболее чувствителен к разрешению кро
         точности и скорости (см. таблицу~\ref{tab:final_summary}).
 
   \item \textbf{Детектор номерных знаков.}
-        Fine-tuning YOLOv8n на датасете Roboflow LP (50 эпох, batch=16,
+        Fine-tuning YOLOv8n на датасете car-plate-detection (Kaggle, 433 изображения, 50 эпох, batch=16,
         SGD, lr=0.01) позволил достичь mAP@0.50\,=\,\textbf{0.889}~---
         на 40 п.п. выше предобученной базовой модели на данном классе.
         Это подтверждает высокую эффективность transfer learning
@@ -1830,14 +1829,14 @@ EasyOCR наиболее чувствителен к разрешению кро
         (таблица~\ref{tab:color_methods}).
 
   \item \textbf{Классификация типа кузова.}
-        ResNet18 достигает Accuracy top-1\,=\,\textbf{0.771}.
+        ResNet18 достигает Accuracy top-1\,=\,\textbf{0.784}.
         Сравнение с MobileNetV2 (таблица~\ref{tab:arch_comparison})
-        показывает, что ResNet18 превосходит MobileNetV2 на 14.7 п.п.
+        показывает, что ResNet18 превосходит MobileNetV2 на 16.4 п.п.
         по точности при более высоком FPS на GPU~T4
-        (317.2 против 163.6), что обусловлено лучшей
+        (279.1 против 127.9), что обусловлено лучшей
         оптимизацией стандартных свёрток в CUDA по сравнению
         с depthwise-операциями MobileNetV2.
-        Наиболее сложный класс~--- \textit{sedan} (F1\,=\,0.608)
+        Наиболее сложный класс~--- \textit{sedan} (F1\,=\,0.626)
         из-за визуального сходства с хетчбэком.
 
   \item \textbf{Производительность конвейера.}
