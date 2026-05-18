@@ -50,8 +50,8 @@
 \setlength{\emergencystretch}{1.5em}
 
 %% ── Переименование подписей ──────────────────────────────
-\addto\captionsenglish{\renewcommand{\figurename}{Рис.}}
-\addto\captionsrussian{\renewcommand{\figurename}{Рис.}}
+\addto\captionsenglish{\renewcommand{\figurename}{Рисунок}}
+\addto\captionsrussian{\renewcommand{\figurename}{Рисунок}}
 
 %% ── Стиль заголовков глав ─────────────────────────────────
 \usepackage{titlesec}
@@ -595,15 +595,49 @@ YOLOv8 состоит из трёх функциональных блоков, �
 \label{fig:yolo_arch}
 \end{figure}
 
-Функция потерь YOLOv8:
+Функция потерь YOLOv8 объединяет три компонента:
 \begin{equation}
   \mathcal{L} = \lambda_{\mathrm{box}}\,\mathcal{L}_{\mathrm{box}}
               + \lambda_{\mathrm{cls}}\,\mathcal{L}_{\mathrm{cls}}
               + \lambda_{\mathrm{dfl}}\,\mathcal{L}_{\mathrm{dfl}},
 \end{equation}
-где $\mathcal{L}_{\mathrm{box}}$~--- CIoU loss,
-$\mathcal{L}_{\mathrm{cls}}$~--- BCE,
-$\mathcal{L}_{\mathrm{dfl}}$~--- Distribution Focal Loss.
+где коэффициенты по умолчанию: $\lambda_{\mathrm{box}}=7.5$,
+$\lambda_{\mathrm{cls}}=0.5$, $\lambda_{\mathrm{dfl}}=1.5$.
+
+\textbf{$\mathcal{L}_{\mathrm{box}}$ --- Complete IoU (CIoU) loss}
+учитывает одновременно три геометрических аспекта совпадения боксов:
+\begin{equation}
+  \mathcal{L}_{\mathrm{CIoU}} = 1 - \mathrm{IoU}
+    + \frac{\rho^2(b,\,b^{\mathrm{gt}})}{c^2}
+    + \alpha\,v,
+\end{equation}
+где $\rho^2(b, b^{\mathrm{gt}})$~--- квадрат евклидова расстояния между
+центрами предсказанного и эталонного боксов; $c$~--- диагональ минимального
+объемлющего прямоугольника;
+\begin{equation}
+  v = \frac{4}{\pi^2}\!\left(\arctan\frac{w^{\mathrm{gt}}}{h^{\mathrm{gt}}}
+    - \arctan\frac{w}{h}\right)^{\!2}
+\end{equation}
+--- штраф за разницу соотношений сторон;
+$\alpha = v\,/\,(1 - \mathrm{IoU} + v)$~--- балансирующий коэффициент.
+В отличие от простого IoU-loss, CIoU обеспечивает корректный ненулевой
+градиент при непересекающихся боксах и сходится быстрее.
+
+\textbf{$\mathcal{L}_{\mathrm{cls}}$ --- Binary Cross-Entropy (BCE)}
+применяется независимо к каждому классу через сигмоид-активацию,
+что позволяет детектору предсказывать несколько классов одновременно
+(в отличие от softmax):
+\begin{equation}
+  \mathcal{L}_{\mathrm{cls}} =
+  -\sum_{k=1}^{K}\bigl[y_k\log\hat{p}_k
+    + (1-y_k)\log(1-\hat{p}_k)\bigr],
+\end{equation}
+где $\hat{p}_k = \sigma(z_k)$~--- предсказанная вероятность класса~$k$.
+
+\textbf{$\mathcal{L}_{\mathrm{dfl}}$ --- Distribution Focal Loss (DFL)}
+вместо скалярного предсказания координат обучает модель предсказывать
+дискретное распределение вероятностей по бинам~--- подробнее
+см.\ подраздел~\ref{subsec:anchor_free}.
 
 \subsection{Эволюция семейства YOLO}
 
@@ -718,6 +752,7 @@ feature map.
 \end{itemize}
 
 \subsection{Anchor-free голова и Distribution Focal Loss}
+\label{subsec:anchor_free}
 
 YOLOv8 напрямую предсказывает расстояния от центра ячейки до
 четырёх сторон бокса $(l, t, r, b)$, из которых восстанавливается
