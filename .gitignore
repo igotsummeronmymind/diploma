@@ -22,8 +22,6 @@ EOF
 test.mp4
 
 #presentation
-diploma_present.pptx
-presentation_practical_part.md
 ~$diploma_present.pptx
 *.docx
 
