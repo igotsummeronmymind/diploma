@@ -162,7 +162,7 @@ YOLOv8n~--- для детекции ТС и номерных знаков, ResNe
 Kaggle car-plate-detection). Детектор номерных знаков YOLO26n (fine-tuned) достиг
 mAP@0.50\,=\,0.9669, превысив YOLOv8n fine-tuned (0.9554).
 Классификатор цвета ResNet18 достиг Accuracy top-1\,=\,0.922.
-Классификатор типа кузова ResNet18~--- Accuracy top-1\,=\,0.784.
+Классификатор типа кузова ResNet18~--- Accuracy top-1\,=\,0.786.
 EasyOCR обеспечивает CRR\,=\,0.975 на синтетических номерах
 и CRR\,=\,0.750 на реальных данных NOMEROFF-NET~RU (2845~кропов).
 Проведено сравнительное исследование ResNet18 и MobileNetV2.
@@ -1661,7 +1661,7 @@ ResNet18 дообучался на CompCars body type ($\approx$30\,000 изоб
     (sedan vs.\ hatchback, van vs.\ minibus). Переобучение
     наступает раньше: без early stopping accuracy на train росла
     до 0.92, тогда как на test~--- снизилась. Лучшая модель
-    зафиксирована на эпохе~21.
+    зафиксирована на эпохе~22.
 
   \item \textbf{Отсутствие StepLR:} при малой фиксированной LR
     ($5\times10^{-5}$) дополнительное снижение через планировщик
@@ -1684,9 +1684,9 @@ ResNet18 дообучался на CompCars body type ($\approx$30\,000 изоб
 \toprule
 \textbf{Метрика} & \textbf{MobileNetV2} & \textbf{ResNet18} \\
 \midrule
-Accuracy top-1 & 0.620 & \textbf{0.784} \\
-Accuracy top-3 & --- & 0.961 \\
-Macro F1       & --- & 0.782 \\
+Accuracy top-1 & 0.620 & \textbf{0.786} \\
+Accuracy top-3 & --- & 0.966 \\
+Macro F1       & --- & 0.783 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1700,28 +1700,28 @@ Macro F1       & --- & 0.782 \\
 \toprule
 \textbf{Класс} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{N} \\
 \midrule
-sedan     & 0.728 & 0.550 & 0.626 & 151 \\
-suv       & 0.905 & 0.971 & 0.937 & 137 \\
-hatchback & 0.679 & 0.742 & 0.709 & 151 \\
-van       & 0.714 & 0.732 & 0.723 & 157 \\
-truck     & 0.899 & 0.962 & 0.930 & 158 \\
-minibus   & 0.771 & 0.760 & 0.766 & 146 \\
+sedan     & 0.660 & 0.669 & 0.664 & 151 \\
+suv       & 0.839 & 0.985 & 0.906 & 137 \\
+hatchback & 0.761 & 0.695 & 0.727 & 151 \\
+van       & 0.760 & 0.726 & 0.743 & 157 \\
+truck     & 0.899 & 0.956 & 0.926 & 158 \\
+minibus   & 0.777 & 0.692 & 0.732 & 146 \\
 \midrule
-\textbf{Macro avg} & 0.783 & 0.786 & 0.782 & 900 \\
+\textbf{Macro avg} & 0.783 & 0.787 & 0.783 & 900 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \textbf{Анализ ошибок по классам.}
-Наиболее низкий F1 у класса \textit{sedan} (0.626): седаны
+Наиболее низкий F1 у класса \textit{sedan} (0.664): седаны
 имеют наибольшее визуальное сходство с хетчбэками
 (схожий силуэт, различие только в форме задней части).
 Ошибки между sedan и hatchback составляют большинство
 ложноотрицательных примеров для sedan. Классы \textit{truck}
-(F1 = 0.930) и \textit{suv} (F1 = 0.937) распознаются
+(F1 = 0.926) и \textit{suv} (F1 = 0.906) распознаются
 наиболее уверенно~--- их силуэты принципиально отличаются
 от остальных классов (высокий клиренс, рамочная конструкция
-у truck). Accuracy top-3 = 0.961 означает, что правильный
+у truck). Accuracy top-3 = 0.966 означает, что правильный
 класс почти всегда входит в тройку наиболее вероятных~---
 это приемлемо для систем мягкого голосования по нескольким кадрам.
 
@@ -1767,8 +1767,8 @@ $3\times3$ свёртками ResNet18, что нивелирует теорет
 \toprule
 \textbf{Модель} & \textbf{Params, M} & \textbf{FLOPS, G} & \textbf{Test Acc} & \textbf{FPS (T4)} & \textbf{.pth, MB} \\
 \midrule
-\textbf{ResNet18}    & 11.7 & 1.8 & \textbf{0.784} & \textbf{279.1} & $\approx 45$ \\
-MobileNetV2 &  3.4 & 0.3 & 0.620 & 127.9 & $\approx 14$ \\
+\textbf{ResNet18}    & 11.7 & 1.8 & \textbf{0.786} & \textbf{299.4} & $\approx 45$ \\
+MobileNetV2 &  3.4 & 0.3 & 0.620 & 169.0 & $\approx 14$ \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1828,7 +1828,7 @@ EasyOCR (кроп номера)     & $\approx$350--500 & 92 \\
 Детекция номеров    & \textbf{YOLO26n (fine-tuned)} & \textbf{mAP@0.50} & \textbf{0.9669} \\
 Классификация цвета & ResNet18 (VCoR)            & Accuracy top-1 & \textbf{0.922} \\
 Классификация цвета & ResNet18 (VCoR)            & Accuracy top-3 & 0.994 \\
-Классификация кузова& ResNet18 (CompCars)        & Accuracy top-1 & \textbf{0.784} \\
+Классификация кузова& ResNet18 (CompCars)        & Accuracy top-1 & \textbf{0.786} \\
 OCR (синтетика)     & EasyOCR ru+en             & CRR / Plate Acc & 0.975 / 0.800 \\
 OCR (NOMEROFF-NET RU) & EasyOCR ru+en           & CRR / Plate Acc & 0.750 / 0.225 \\
 \textbf{Pipeline}   & \textbf{Конвейер (без OCR)} & \textbf{FPS}  & $\approx$\textbf{30} \\
@@ -1902,14 +1902,14 @@ EasyOCR наиболее чувствителен к разрешению кро
         (таблица~\ref{tab:color_methods}).
 
   \item \textbf{Классификация типа кузова.}
-        ResNet18 достигает Accuracy top-1\,=\,\textbf{0.784}.
+        ResNet18 достигает Accuracy top-1\,=\,\textbf{0.786}.
         Сравнение с MobileNetV2 (таблица~\ref{tab:arch_comparison})
-        показывает, что ResNet18 превосходит MobileNetV2 на 16.4 п.п.
+        показывает, что ResNet18 превосходит MobileNetV2 на 16.6 п.п.
         по точности при более высоком FPS на GPU~T4
-        (279.1 против 127.9), что обусловлено лучшей
+        (299.4 против 169.0), что обусловлено лучшей
         оптимизацией стандартных свёрток в CUDA по сравнению
         с depthwise-операциями MobileNetV2.
-        Наиболее сложный класс~--- \textit{sedan} (F1\,=\,0.626)
+        Наиболее сложный класс~--- \textit{sedan} (F1\,=\,0.664)
         из-за визуального сходства с хетчбэком.
 
   \item \textbf{OCR номерных знаков.}
