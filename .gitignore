@@ -24,5 +24,6 @@ test.mp4
 #presentation
 ~$diploma_present.pptx
 *.docx
+presentation_01_detection.md
 
 notebooks/
