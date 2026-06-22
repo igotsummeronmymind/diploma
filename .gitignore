@@ -1,4 +1,3 @@
-cat > .gitignore << 'EOF'
 # Секреты
 kaggle.json
 
@@ -7,24 +6,23 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# Большие файлы / модели
+# Большие файлы / модели / временные данные
 *.pth
 *.zip
 *.h5
 diploma_*/
 /tmp/
 
-# macOS
-.DS_Store
-EOF
-
-#test videos 
-test.mp4
-
-#presentation
+# Презентации / отчёты / служебные файлы
 ~$diploma_present.pptx
 *.docx
 presentation_01_detection.md
 presentation_02_color.md
-
 notebooks/
+test.mp4
+
+# Локальный контекстный документ проекта (не для коммита)
+CONTEXT.md
+
+# macOS
+.DS_Store
