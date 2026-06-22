@@ -26,3 +26,8 @@ CONTEXT.md
 
 # macOS
 .DS_Store
+
+# локальный venv для перегенерации картинок
+.venv_figs/
+
+figs/
