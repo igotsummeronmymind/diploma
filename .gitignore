@@ -19,7 +19,9 @@ diploma_*/
 presentation_01_detection.md
 presentation_02_color.md
 notebooks/
-test.mp4
+
+# Видео (крупные бинарники --- не храним в git)
+*.mp4
 
 # Локальный контекстный документ проекта (не для коммита)
 CONTEXT.md
@@ -31,3 +33,22 @@ CONTEXT.md
 .venv_figs/
 
 figs/
+
+# Артефакты сборки LaTeX (latexmk / pdflatex)
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.nav
+*.snm
+*.vrb
+build.log
