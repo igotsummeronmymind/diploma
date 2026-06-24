@@ -37,6 +37,7 @@
 \usepackage{multirow}
 \usepackage{colortbl}
 \usepackage[table]{xcolor}
+\usepackage{pdfpages}
 
 %% ── TikZ для схем ─────────────────────────────────────────
 \usepackage{tikz}
@@ -145,48 +146,9 @@
 % ─────────────────────────────────────────────────────────────
 \begin{document}
 
-%% =====================  ТИТУЛЬНЫЙ ЛИСТ  =====================
-\begin{titlepage}
-\begin{center}
-{\small
-Федеральное государственное автономное образовательное\\
-учреждение высшего образования\\[4pt]
-«Московский физико-технический институт\\
-(национальный исследовательский университет)»
-}
-
-\vspace{5cm}
-
-{\large\bfseries
-«Исследование методов определения характеристик транспортного средства по видеоизображениям»
-}\\[1.2em]
-{\normalsize (бакалаврская работа)}
-\end{center}
-
-\vspace{4cm}
-
-\hfill
-\begin{minipage}{0.42\textwidth}
-  \textbf{Студент:}\\
-  Клименко Виталий Евгеньевич\\[1.8em]
-  \rule{\linewidth}{0.4pt}
-\end{minipage}
-
-\vspace{2em}
-
-\hfill
-\begin{minipage}{0.42\textwidth}
-  \textbf{Научный руководитель:}\\
-  Назаров Алексей Николаевич\\[1.8em]
-  \rule{\linewidth}{0.4pt}
-\end{minipage}
-
-\vfill
-\begin{center}
-Москва\\
-2026
-\end{center}
-\end{titlepage}
+%% =====================  ТИТУЛЬНЫЙ ЛИСТ (официальный PDF)  =====================
+\includepdf[pages=1]{titlepage.pdf}
+\setcounter{page}{1}   % титул не нумеруется; аннотация --- страница 1
 
 %% =====================  АННОТАЦИЯ  ==========================
 \chapter*{Аннотация}
