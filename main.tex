@@ -71,9 +71,21 @@
 \usepackage{microtype}
 \setlength{\emergencystretch}{1.5em}
 
+%% ── Контроль висячих строк и заполнения страниц ───────────
+\clubpenalty=10000          % запрет одиночной строки абзаца ВНИЗУ страницы
+\widowpenalty=10000         % запрет одиночной строки абзаца ВВЕРХУ страницы
+\displaywidowpenalty=10000  % то же рядом с выключными формулами
+\brokenpenalty=10000        % не разрывать страницу на переносе слова
+\usepackage{needspace}      % \needspace{N\baselineskip} --- держать блок целиком
+\raggedbottom               % не растягивать вертикаль (важно для страниц с рисунками)
+
 %% ── Переименование подписей ──────────────────────────────
 \addto\captionsenglish{\renewcommand{\figurename}{Рисунок}}
 \addto\captionsrussian{\renewcommand{\figurename}{Рисунок}}
+\addto\captionsenglish{\renewcommand{\tablename}{Таблица}}
+\addto\captionsrussian{\renewcommand{\tablename}{Таблица}}
+\addto\captionsenglish{\renewcommand{\contentsname}{Содержание}}
+\addto\captionsrussian{\renewcommand{\contentsname}{Содержание}}
 \addto\captionsrussian{\renewcommand{\bibname}{Список использованных источников}}
 \addto\captionsenglish{\renewcommand{\bibname}{Список использованных источников}}
 
@@ -194,7 +206,7 @@ EasyOCR, transfer learning, глубокое обучение.
 
 \textbf{Результаты:} предложена конвейерная архитектура (YOLO26n~--- детекция
 ТС и номеров, ResNet18~--- цвет и тип кузова, EasyOCR~--- OCR кириллицы).
-Детектор номеров достиг mAP@0.50\,=\,0.9554; классификатор цвета~---
+Детектор номеров достиг mAP@0.50\,=\,0.9669; классификатор цвета~---
 Accuracy\,=\,0.936; типа кузова~--- Accuracy\,=\,0.830;
 EasyOCR~--- CRR\,=\,0.750 на реальных данных.
 
@@ -240,12 +252,12 @@ YOLO      & You Only Look Once --- одноэтапный детектор об�
 В настоящее время анализ видеоизображений широко применяется для мониторинга
 дорожного движения, обеспечения безопасности и контроля доступа на объекты.
 Объём видеоданных постоянно растёт, что делает ручную
-обработку информации неэффективной и трудоёмкой~\cite{abramov2019}.
+обработку информации неэффективной и трудоёмкой.
 
 Практический интерес представляет автоматическое определение характеристик
-автомобиля: государственного регистрационного знака, мар/ки, модели и цвета.
+автомобиля: государственного регистрационного знака, марки, модели и цвета.
 Эти данные применяются в задачах контроля проезда, поиска транспортных средств
-и учёта трафика~\cite{survey2021}. Однако качество видеозаписей часто
+и учёта трафика. Однако качество видеозаписей часто
 ограничено низким разрешением, изменениями освещённости,
 погодными условиями и движением объектов.
 
@@ -345,7 +357,7 @@ SSD           & Одноэтапная, anchor-based          & Баланс с�
 
 \subsection{Двухэтапные детекторы (Faster R-CNN)}
 
-Detectors семейства Faster R-CNN работают в два этапа: Region Proposal Network
+Детекторы семейства Faster R-CNN работают в два этапа: Region Proposal Network
 генерирует кандидаты, затем классификационная голова уточняет координаты.
 Подход обеспечивает высокую точность, но требователен к вычислительным ресурсам
 и не обеспечивает скорость, достаточную для обработки видео в реальном времени.
@@ -1101,7 +1113,7 @@ $N$~--- длина эталонной строки.
   \node[blk, text width=4cm, right=1.2cm of sw] (p2)
         {\textbf{Фаза 2}\\Весь backbone обучается\\$\eta_2 = \eta_1/10$};
   \node[grn, text width=3cm, right=1.2cm of p2] (save)
-        {Best model\\(max test acc)};
+        {Лучшая модель\\(max test acc)};
 
   \draw[arr] (p1) -- (sw);
   \draw[arr] (sw) -- (p2);
@@ -1362,9 +1374,9 @@ $\theta \sim \mathcal{N}(0, 1/\lambda)$.
 \end{equation}
 где $e_{\mathrm{best}}$~--- номер эпохи с наилучшей метрикой.
 
-В данной работе early stopping с patience=7 применяется
-для классификатора кузова, что предотвратило переобучение~---
-лучшая модель получена на эпохе~27, обучение остановлено на эпохе~34.
+В данной работе early stopping с patience=7 настроен
+для классификатора кузова: обучение прошло все 40~эпох (ранняя остановка
+не сработала), а лучшая по валидации модель зафиксирована на эпохе~34.
 
 \subsection{Аугментация как регуляризация}
 
@@ -1676,12 +1688,38 @@ microbus, minibus            & minibus  & Микроавтобус \\
 
 \section{Эксперимент 1: детекция ТС и номерных знаков}
 
+Детекция в конвейере двухступенчатая: транспортные средства находит
+предобученная на COCO YOLO26n (классы \texttt{car}, \texttt{bus},
+\texttt{truck}, \texttt{motorcycle}), а внутри области каждого ТС номерной
+знак локализует та же YOLO26n, дообученная под единственный класс
+\texttt{license\_plate}. Пример работы детектора ТС на реальном кадре
+приведён на рисунке~\ref{fig:det_vehicle}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{det_vehicle_demo.png}
+  \caption{Детекция транспортных средств предобученной на COCO YOLO26n:
+           ограничивающие рамки с оценкой уверенности}
+  \label{fig:det_vehicle}
+\end{figure}
+
 \subsection{Протокол и обоснование гиперпараметров}
 
 YOLO26n дообучался на датасете Russian license plates
 (Kaggle, tomilovivan, 668 изображений: 542 train / 126 test)
 в течение 50 эпох (параметры~--- таблица~\ref{tab:plate_hp}).
+Характерные изображения обучающей выборки с разметкой приведены на
+рисунке~\ref{fig:det_dataset}.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{det_dataset_samples.png}
+  \caption{Примеры обучающей выборки Russian license plates (542~изображения):
+           зелёным выделена YOLO-разметка номерного знака}
+  \label{fig:det_dataset}
+\end{figure}
+
+\needspace{5\baselineskip}
 \textbf{Обоснование ключевых решений:}
 \begin{itemize}
   \item \textbf{Transfer learning, а не обучение с нуля:} 542~обучающих
@@ -1693,7 +1731,7 @@ YOLO26n дообучался на датасете Russian license plates
     единственный класс «номерной знак» сводится к переспециализации головы
     и аккуратной подстройке backbone. Это обеспечивает быструю сходимость на
     малом целевом наборе; эффективность подхода подтверждается приростом
-    mAP@0.50 с $\approx$0.503 (zero-shot) до 0.9554 после дообучения
+    mAP@0.50 с $\approx$0.503 до 0.9669 после дообучения
     (таблица~\ref{tab:plate_det}).
 
   \item \textbf{Базовая модель \texttt{yolo26n.pt}:} выбрана наименьшая
@@ -1734,47 +1772,90 @@ YOLO26n дообучался на датасете Russian license plates
 
 \subsection{Результаты}
 
+После 50~эпох дообучения детектор номеров на тестовой выборке
+(126~изображений, 216~номеров) достиг mAP@0.50\,=\,0.9669 при
+Precision\,=\,0.977 и Recall\,=\,0.912 (таблица~\ref{tab:plate_det})~---
+кратно выше базовой предобученной на COCO модели, не видевшей российских
+номеров.
+
 \begin{table}[H]
 \centering
-\caption{Метрики детектора номерных знаков YOLO26n (тест, 126~изображений)}
+\caption{Метрики детектора номерных знаков YOLO26n (тест, 126~изображений, 216~номеров)}
 \label{tab:plate_det}
 \rowcolors{2}{rowgray}{white}
-\begin{tabular}{lc}
+\begin{tabular}{lcccc}
 \toprule
-\textbf{Конфигурация} & \textbf{mAP@0.50} \\
+\textbf{Конфигурация} & \textbf{P} & \textbf{R} & \textbf{mAP@0.50} & \textbf{mAP@0.5:0.95} \\
 \midrule
-Предобученная на COCO (zero-shot)   & $\approx$0.503 \\
-\textbf{Дообученная YOLO26n}         & \textbf{0.9554} \\
+Предобученная на COCO        & ---            & ---            & $\approx$0.503 & ---            \\
+\textbf{Дообученная YOLO26n} & \textbf{0.977} & \textbf{0.912} & \textbf{0.9669} & \textbf{0.590} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Анализ результатов.}
-Дообученный детектор номеров \textbf{YOLO26n} достиг mAP@0.50\,=\,0.9554~---
-кратно выше базовой предобученной на COCO модели ($\approx$0.503), не
-видевшей российских номеров. Это соответствует уровню промышленных
-ANPR-систем и подтверждает высокую эффективность transfer learning при
-ограниченном объёме целевых данных (542~обучающих изображения). Достигнутой
-точности локализации достаточно для корректной обрезки кропа номера под
-последующее OCR-распознавание.
+\textbf{Эффект дообучения.}
+Предобученная на COCO модель не знает класса «номерной знак»: без дообучения
+она либо не находит пластину, либо грубо локализует её в составе
+автомобиля (рисунок~\ref{fig:det_finetune}, слева). После дообучения номер
+выделяется плотной рамкой с высокой уверенностью (справа). Численно это
+выражается ростом mAP@0.50 с $\approx$0.503 до 0.9669.
 
-% TODO(re-run): nb01 пересобран и пока без выводов --- графиков детектора нет.
-% После прогона в Colab сохранить из nb01 и вставить сюда:
-%   figs/det_pr_curve.png      --- PR-кривая дообученного YOLO26n,
-%   figs/det_train_curves.png  --- кривые обучения (box/cls/dfl loss, mAP),
-%   figs/det_samples.png       --- примеры детекций номеров на тесте.
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=0.8\textwidth]{det_pr_curve.png}
-%   \caption{PR-кривая дообученного детектора номеров YOLO26n (тест)}
-%   \label{fig:det_pr}
-% \end{figure}
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=\textwidth]{det_samples.png}
-%   \caption{Примеры детекции номерных знаков дообученным YOLO26n}
-%   \label{fig:det_samples}
-% \end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{det_finetune_compare.png}
+  \caption{Детекция номера до и после дообучения YOLO26n: слева~--- предобученная
+           на COCO модель, справа~--- дообученная на целевых данных}
+  \label{fig:det_finetune}
+\end{figure}
+
+\textbf{Динамика обучения.}
+Кривые обучения приведены на рисунке~\ref{fig:det_curves}. Обе компоненты
+функции потерь (box, cls) монотонно убывают, а тестовая mAP@0.50 быстро
+растёт в первые 5~эпох и выходит на плато $\approx$0.96--0.97 примерно к
+эпохе~30; mAP@0.5:0.95 продолжает плавно расти до $\approx$0.59 за счёт
+линейного затухания LR. Согласованность кривых на обучении и тесте указывает
+на отсутствие переобучения. Кривые потерь ведут себя по-разному: box-loss
+убывает почти линейно, а cls-loss резко падает в первые 10~эпох~--- модель
+быстро учится отделять номер от фона, а геометрию рамки уточняет постепенно.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{det_train_curves.png}
+  \caption{Кривые обучения YOLO26n на детекции номеров: функции потерь
+           (box, cls) и тестовые mAP@0.50, mAP@0.5:0.95 по эпохам}
+  \label{fig:det_curves}
+\end{figure}
+
+Precision-Recall кривая дообученной модели (рисунок~\ref{fig:det_pr})
+держится у Precision\,$\approx$\,1.0 почти на всём диапазоне Recall и
+проседает лишь у правого края; площадь под кривой даёт
+mAP@0.50\,=\,0.967. Это соответствует уровню промышленных ANPR-систем и
+подтверждает высокую эффективность transfer learning при ограниченном объёме
+целевых данных (542~обучающих изображения).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{det_pr_curve.png}
+  \caption{Precision-Recall кривая дообученного детектора номеров YOLO26n (тест)}
+  \label{fig:det_pr}
+\end{figure}
+
+\textbf{Анализ ошибок.}
+Оставшиеся пропуски детектора (false negative) приходятся почти исключительно
+на мелкие и сильно удалённые номера малой ширины в кадре
+(рисунок~\ref{fig:det_fn}). Это ограничение носит физический характер
+(разрешение пластины), а не алгоритмический, и согласуется с найденным далее
+экспериментально порогом читаемости номера (подраздел~\ref{subsec:video_tracking}).
+Достигнутой точности локализации достаточно для корректной обрезки кропа
+номера под последующее OCR-распознавание.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{det_errors_fn.png}
+  \caption{Примеры пропусков детектора (false negative): зелёным~--- эталон,
+           синим~--- предсказание; ошибки приходятся на мелкие удалённые номера}
+  \label{fig:det_fn}
+\end{figure}
 
 \subsection{Сравнение с YOLOv8n}
 \label{subsec:yolo_compare}
@@ -1802,14 +1883,42 @@ YOLOv8n & 37.3 & 3.2 & 8.7 \\
 \end{tabular}
 \end{table}
 
-Дополнительное преимущество YOLO26n~--- сквозной (end-to-end) инференс без
-постобработки NMS, что упрощает конвейер и стабилизирует задержку. Хотя при
-сравнении \emph{предобученных} моделей на одном тестовом кадре YOLO26n
-оказался несколько медленнее (16.0~мс против 12.6~мс/кадр на GPU), после
-дообучения он достигает на целевых данных mAP@0.50\,=\,0.9554
-(таблица~\ref{tab:plate_det}) при меньшей ёмкости. Поэтому в качестве
-финального детектора (и ТС, и номеров) выбран YOLO26n; выбор лучшей модели
-для конвейера выполняется автоматически по mAP@0.50 (ноутбук~01).
+Помимо документированных бенчмарков, обе архитектуры дообучены в идентичных
+условиях (50~эпох, batch~16, \texttt{optimizer=auto}) на целевом датасете
+номеров и измерены на одной тестовой выборке (таблица~\ref{tab:yolo_finetuned},
+рисунок~\ref{fig:det_yolo_compare}). На целевых данных YOLO26n превосходит
+YOLOv8n по mAP@0.50 (0.9669 против 0.9554), уступая лишь $\approx$2~мс на кадр
+(20.6 против 18.3~мс). Дополнительное преимущество YOLO26n~--- сквозной
+(end-to-end) инференс без постобработки NMS, что упрощает конвейер и
+стабилизирует задержку. Прирост целевой точности при сопоставимой скорости
+оправдывает выбор более новой архитектуры.
+
+\begin{table}[H]
+\centering
+\caption{Дообученные детекторы номеров на тестовой выборке (126~изображений)}
+\label{tab:yolo_finetuned}
+\rowcolors{2}{rowgray}{white}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Модель} & \textbf{P} & \textbf{R} & \textbf{mAP@0.50} & \textbf{mAP@0.5:0.95} & \textbf{Время, мс} \\
+\midrule
+YOLOv8n (fine-tuned)          & 0.977 & 0.926 & 0.9554 & 0.593 & 18.3 \\
+\textbf{YOLO26n (fine-tuned)} & \textbf{0.977} & \textbf{0.912} & \textbf{0.9669} & \textbf{0.590} & 20.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{det_yolo_compare.png}
+  \caption{Дообученные детекторы YOLOv8n и YOLO26n на тестовой выборке номеров:
+           mAP@0.50 (слева) и среднее время инференса (справа)}
+  \label{fig:det_yolo_compare}
+\end{figure}
+
+Поэтому в качестве финального детектора (и ТС, и номеров) выбран YOLO26n;
+выбор лучшей модели для конвейера выполняется автоматически по mAP@0.50
+(ноутбук~01).
 
 \section{Эксперимент 2: классификатор цвета}
 
@@ -1819,6 +1928,7 @@ ResNet18 (предобученный на ImageNet) дообучался на VC
 20 эпох, двухфазная стратегия с разморозкой backbone на эпохе~5.
 Батч: 32.
 
+\needspace{5\baselineskip}
 \textbf{Обоснование ключевых решений:}
 \begin{itemize}
   \item \textbf{ResNet18 при объёме VCoR $\approx$15k:}
@@ -1907,7 +2017,10 @@ Macro F1       & --- & 0.930 \\
 вертикальная пунктирная линия отмечает момент разморозки backbone,
 после которого валидационная точность скачком поднимается и выходит
 на плато к эпохам~17--18 без признаков переобучения (кривые train и
-val идут согласованно).
+val идут согласованно). На графике потерь тот же момент виден как резкий
+спад: после разморозки train- и val-loss синхронно опускаются на низкое
+плато при небольшом зазоре между ними, что дополнительно подтверждает
+отсутствие переобучения.
 
 \begin{figure}[H]
 \centering
@@ -2020,6 +2133,7 @@ ResNet18 дообучался на CompCars body type ($\approx$30\,000 изоб
 40 эпох с ранней остановкой (patience=7), двухфазная стратегия fine-tuning.
 Платформа: GPU Tesla T4.
 
+\needspace{5\baselineskip}
 \textbf{Ключевые отличия от эксперимента~2 и их обоснование:}
 \begin{itemize}
   \item \textbf{LR = $5\times10^{-5}$ (ниже, чем для цвета):}
@@ -2209,7 +2323,9 @@ Macro F1       & 0.822 \\
 Характерно, что Train~Acc ($\approx$0.55) ниже Val~Acc ($\approx$0.80):
 это прямое следствие сильной регуляризации (Mixup и агрессивные
 аугментации делают обучающие примеры труднее валидационных), а не
-недообучения (см.\ подраздел про Mixup).
+недообучения (см.\ подраздел про Mixup). Кривая потерь при этом снижается
+монотонно и без расхождения train/val~--- то есть плато точности вызвано
+именно регуляризацией, а не насыщением оптимизации.
 
 \begin{figure}[H]
 \centering
@@ -2597,7 +2713,7 @@ EasyOCR (кроп номера)     & $\approx$350--500 & 92 \\
 \textbf{Модуль} & \textbf{Компонент} & \textbf{Метрика} & \textbf{Результат} \\
 \midrule
 Детекция ТС         & YOLO26n (COCO pretrained)  & mAP@0.5:0.95   & 0.409 (COCO val) \\
-Детекция номеров    & \textbf{YOLO26n (fine-tuned)} & \textbf{mAP@0.50} & \textbf{0.9554} \\
+Детекция номеров    & \textbf{YOLO26n (fine-tuned)} & \textbf{mAP@0.50} & \textbf{0.9669} \\
 Классификация цвета & ResNet18 (VCoR)            & Accuracy top-1 & \textbf{0.936} \\
 Классификация цвета & ResNet18 (VCoR)            & Accuracy top-3 & 0.993 \\
 Классификация кузова& ResNet18 (CompCars)        & Accuracy top-1 & \textbf{0.830} \\
@@ -2730,14 +2846,15 @@ EasyOCR наиболее чувствителен к разрешению кро
   \item \textbf{Детектор номерных знаков.}
         Дообучение YOLO26n на датасете Russian license plates (Kaggle,
         668 изображений, 50 эпох, batch=16, \texttt{optimizer=auto})
-        подняло mAP@0.50 до \textbf{0.9554} против $\approx$0.503 у
+        подняло mAP@0.50 до \textbf{0.9669} против $\approx$0.503 у
         исходной COCO-модели. В роли финального детектора (и ТС, и
         номеров) оставлен YOLO26n как более выгодная архитектура: имея
         меньше параметров (2.4M против 3.2M у YOLOv8n), меньшую
         вычислительную сложность и сквозной инференс без NMS, он
-        одновременно точнее на эталонном COCO. Этот результат лишний раз
-        показывает, насколько эффективен transfer learning при скромном
-        объёме целевых данных.
+        одновременно точнее как на эталонном COCO, так и на целевых
+        данных (mAP@0.50\,=\,0.9669 против 0.9554 у дообученного в тех же
+        условиях YOLOv8n). Этот результат лишний раз показывает, насколько
+        эффективен transfer learning при скромном объёме целевых данных.
 
   \item \textbf{Классификация цвета.}
         ResNet18 после 20 эпох двухфазного дообучения на VCoR выходит на
@@ -2805,13 +2922,9 @@ EasyOCR наиболее чувствителен к разрешению кро
 \addcontentsline{toc}{chapter}{Список использованных источников}
 \begin{thebibliography}{99}
 
-\bibitem{abramov2019}
-Абрамов А.\,А.
-\textit{Алгоритм распознавания номерных знаков в условиях плохого качества видео}~//
-КиберЛенинка, 2019.
-
 \bibitem{survey2021}
-\textit{A Survey of Automatic License Plate Recognition Systems}~//
+Lubna, Mufti N., Shah S.\,A.\,A.
+\textit{Automatic Number Plate Recognition: A Detailed Survey of Relevant Algorithms}~//
 Sensors, 21(9):3028, 2021.
 
 \bibitem{yolo26}
@@ -2826,9 +2939,9 @@ Laroca R., Severo E., Zanlorensi L.\,A. и др.
 arXiv:1802.09567, 2018.
 
 \bibitem{laroca2021}
-Laroca R.
-\textit{Automatic License Plate Recognition in Real-World Scenarios}: PhD Thesis~//
-Universidade Federal do Paraná, 2021.
+Laroca R., Zanlorensi L.\,A., Gonçalves G.\,R. и др.
+\textit{An Efficient and Layout-Independent Automatic License Plate Recognition System Based on the YOLO Detector}~//
+IET Intelligent Transport Systems, 15(4):483--503, 2021.
 
 \bibitem{vmmr2024}
 \textit{Two decades of vehicle make and model recognition}~//
@@ -2840,18 +2953,18 @@ Siddiqui A., Mammeri A., Boukerche A.
 IEEE ITS, 2016.
 
 \bibitem{manzoor2022}
-Manzoor M.\,A., Morgan Y.
-\textit{Vehicle Make and Model Recognition Using Deep Learning}~//
-Machine Learning and Knowledge Extraction, 1(2):36, 2022.
+Manzoor M.\,A., Morgan Y., Bais A.
+\textit{Real-Time Vehicle Make and Model Recognition System}~//
+Machine Learning and Knowledge Extraction, 1(2):611--629, 2019.
 
 \bibitem{su2015}
-Su H., Wu X., Chen S., Ji Q.
-\textit{Vehicle Color Recognition Using Convolutional Neural Network}~//
-IEEE ICIP, 2015.
+Rachmadi R.\,F., Purnama I.\,K.\,E.
+\textit{Vehicle Color Recognition using Convolutional Neural Network}~//
+arXiv:1510.07391, 2015.
 
 \bibitem{kubatin2019}
 Кубатин И.\,А.
-\textit{Алгоритм определения цвета автомобиля методом кластеризации k-средних}~//
+\textit{Алгоритм определения цвета автомобиля с использованием метода k-средних}~//
 КиберЛенинка, 2019.
 
 \bibitem{zhang2018mixup}
